@@ -6,6 +6,7 @@ import main.argparser.ParameterSet;
 import main.argparser.Setting;
 
 import java.io.*;
+import java.util.Arrays;
 
 public class HMM {
 
@@ -15,7 +16,7 @@ public class HMM {
         FAIR, UNFAIR
     }
 
-    private static final char[] STATE_CHAR = {'F', 'U'};
+    private static final char[] STATE_CHAR = {'F', 'L'};
 
     private static final double[] INIT_PROBABILITIES = new double[]{.5d, .5d};
     private static final int STATE_COUNT = INIT_PROBABILITIES.length;
@@ -75,8 +76,13 @@ public class HMM {
 
         char[] observations = inSeqRolls.toCharArray();
 
+
+        System.out.println("Viterbi: ");
+
         char[] statePath = viterbi(observations);
         System.out.println(String.valueOf(statePath));
+
+        System.out.println("Viterbi State Path is " + (Arrays.equals(statePath, inSeqViterbi.toCharArray()) ? "" : "NOT ") + "equal");
     }
 
 
@@ -91,35 +97,53 @@ public class HMM {
         for (STATE state : STATE.values()) {
             int stateIndex = state.ordinal();
 
-            tOne[stateIndex][1] = INIT_PROBABILITIES[stateIndex] * EMISSION_MATRIX[stateIndex][observationIndices[1]];
-            tTwo[stateIndex][1] = -1;
+            tOne[stateIndex][0] = INIT_PROBABILITIES[stateIndex] * EMISSION_MATRIX[stateIndex][observationIndices[0]];
+            tTwo[stateIndex][0] = -1;
         }
 
         for (int i = 1; i < length; i++) {
 
             for (STATE state : STATE.values()) {
-                int stateIndex = state.ordinal();
+                int j = state.ordinal();
 
-                Result result = maxState(tOne, observationIndices, i, stateIndex);
 
-                tOne[stateIndex][i] = result.getProbability();
-                tTwo[stateIndex][i] = result.getArgument();
+                //find max
+                double maxProbability = -1d;
+                int maxArg = -1;
+
+                for (STATE stateTwo : STATE.values()) {
+                    int stateIndex = stateTwo.ordinal();
+
+                    double prob = tOne[stateIndex][i - 1] * TRANSITION_MATRIX[stateIndex][j] * EMISSION_MATRIX[j][observationIndices[i]];
+                    if (prob > maxProbability) {
+                        maxProbability = prob;
+                        maxArg = stateIndex;
+                    }
+                }
+
+                tOne[j][i] = maxProbability;
+                tTwo[j][i] = maxArg;
             }
         }
 
         // ENDE
         int zT = -1;
-        for (STATE state : STATE.values()) {
-            int stateIndex = state.ordinal();
+        {
+            double prob = 0d;
+            for (STATE state : STATE.values()) {
+                int stateIndex = state.ordinal();
 
-            double prob = tOne[stateIndex][length - 1];
-            if (prob > zT) {
-                zT = stateIndex;
+                double probIterate = tOne[stateIndex][length - 1];
+                if (probIterate > prob) {
+                    zT = stateIndex;
+                    prob = probIterate;
+                }
             }
         }
 
         int[] z = new int[length];
         char[] x = new char[length];
+
 
         z[length - 1] = zT;
         x[length - 1] = STATE_CHAR[zT];
@@ -129,25 +153,7 @@ public class HMM {
             z[i - 1] = m;
             x[i - 1] = STATE_CHAR[m];
         }
-
-
         return x;
-    }
-
-    private static Result maxState(final double[][] tOne, int[] observationIndices, int i, int j) {
-        double maxProbability = -1d;
-        int maxArg = -1;
-
-        for (STATE state : STATE.values()) {
-            int stateIndex = state.ordinal();
-
-            double prob = tOne[stateIndex][i - 1] * TRANSITION_MATRIX[stateIndex][j] * EMISSION_MATRIX[j][observationIndices[i]];
-            if (prob > maxProbability) {
-                maxProbability = prob;
-                maxArg = stateIndex;
-            }
-        }
-        return new Result(maxProbability, maxArg);
     }
 
     private static int[] observationsToIndices(char[] observcations) {
