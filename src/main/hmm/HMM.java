@@ -114,7 +114,7 @@ public class HMM {
         char[] statePath = viterbi(observations);
         System.out.println(String.valueOf(statePath));
 
-        System.out.println("loaded and generated Viterbi State Paths are " + (Arrays.equals(statePath, inSeqViterbi.toCharArray()) ? "" : "NOT ") + "equal");
+        System.out.println("loaded and generated Viterbi-State-Paths are " + (Arrays.equals(statePath, inSeqViterbi.toCharArray()) ? "" : "NOT ") + "equal");
     }
 
     /**
@@ -125,6 +125,7 @@ public class HMM {
      */
     private static char[] viterbi(final char[] observations) {
 
+        // init
         int[] observationIndices = observationsToIndices(observations);
         int length = observationIndices.length;
 
@@ -137,6 +138,7 @@ public class HMM {
             tTwo[stateIndex][0] = -1;
         }
 
+        // iterate
         for (int i = 1; i < length; i++) {
 
             for (int j = 0; j < STATE_COUNT; j++) {
@@ -160,32 +162,33 @@ public class HMM {
             }
         }
 
-        // ENDE
-        int zT = -1;
+        // backtrace init
+        int zLast = -1;
         {
-            double prob = 0d;
+            double probLast = 0d;
             for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                double probIterate = tOne[stateIndex][length - 1];
-                if (probIterate > prob) {
-                    zT = stateIndex;
-                    prob = probIterate;
+                double prob = tOne[stateIndex][length - 1];
+                if (prob > probLast) {
+                    zLast = stateIndex;
+                    probLast = prob;
                 }
             }
         }
 
-        int[] z = new int[length];
-        char[] x = new char[length];
+        int[] z = new int[length]; // stateIndexPath
+        char[] x = new char[length]; // statePath
 
+        z[length - 1] = zLast;
+        x[length - 1] = STATE_CHAR[zLast];
 
-        z[length - 1] = zT;
-        x[length - 1] = STATE_CHAR[zT];
-
+        // backtrace iterate
         for (int i = length - 1; i > 0; i--) {
             int m = tTwo[z[i]][i];
             z[i - 1] = m;
             x[i - 1] = STATE_CHAR[m];
         }
+
         return x;
     }
 
