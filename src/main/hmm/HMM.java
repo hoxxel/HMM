@@ -8,25 +8,56 @@ import main.argparser.Setting;
 import java.io.*;
 import java.util.Arrays;
 
+/**
+ * Aufgabe: Implementieren Sie den Viterbi-Algorithmus fuer das HMM zu dem Beispiel des
+ * unehrlichen Casinos, wie in der Vorlesung vorgestellt (siehe auch im Buch von
+ * Durbin et al. "Biological sequence analysis" Seite 54-57).
+ * <p>
+ * Anhand  https://en.wikipedia.org/wiki/Viterbi_algorithm  implementiert.
+ * <p>
+ * Ausfuehrbare Klasse, den Dateipfad als Parameter (-file <Path>) uebergeben bekommen muss.
+ * Gibt Daten der Datei aus.
+ * Generiert anhand der eingelesenen beobachteten Sequenz einen Zustands-Pfad mittels des Viterbi-Algorithmus und gibt diesen aus. F = Fair, L = Loaded.
+ */
 public class HMM {
 
+    /**
+     * beobachtbare Ereignisse
+     */
     private static final char[] OBSERVATION_SPACE = {'1', '2', '3', '4', '5', '6'};
 
-    private enum STATE {
-        FAIR, UNFAIR
-    }
-
+    /**
+     * Zustaende in denen sich das Modell befindet
+     */
     private static final char[] STATE_CHAR = {'F', 'L'};
 
+    /**
+     * Anzahl der Zustaende
+     */
+    private static final int STATE_COUNT = STATE_CHAR.length;
+
+    /**
+     * Uebergangswahrscheinlichen aus dem Startzustand in die jeweiligen Zustaende
+     */
     private static final double[] INIT_PROBABILITIES = new double[]{.5d, .5d};
-    private static final int STATE_COUNT = INIT_PROBABILITIES.length;
 
-
+    /**
+     * Uebergangswahrscheinlichen zwischen den Zustaenden
+     */
     private static final double[][] TRANSITION_MATRIX = new double[][]{{.95d, .05d}, {.1d, .9d}};
+    /**
+     * Beobachtungswahrscheinlichketen der Ereignisse in den jeweiligen Zustaenden
+     */
     private static final double[][] EMISSION_MATRIX = new double[][]{{1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6}, {.1d, .1d, .1d, .1d, .1d, .5d}};
 
+    /**
+     * ausfuehrbare Methode
+     *
+     * @param args Argumente
+     */
     public static void main(String[] args) {
 
+        // set up Parameter
         ParameterSet parameterSet = new ParameterSet();
         Setting filePath = new Setting("file", true);
         parameterSet.addSetting(filePath);
@@ -34,7 +65,7 @@ public class HMM {
         try {
             ArgumentParser parser = new ArgumentParser(parameterSet);
             parser.parseArgs(args);
-        } catch (ArgumentParserException e) {
+        } catch (ArgumentParserException e) { // if parameter is missing or not intended
             System.err.println(e.getMessage());
             System.exit(1);
         }
@@ -48,7 +79,6 @@ public class HMM {
             System.err.println("ERROR: file " + file + " not found");
             System.exit(1);
         }
-
 
         System.out.println("reading " + file);
 
@@ -70,22 +100,29 @@ public class HMM {
         }
         System.out.println("successfully finished reading file");
 
+
+        // print file data
         System.out.println(inSeqRolls);
         System.out.println(inSeqDice);
         System.out.println(inSeqViterbi);
 
+        // generate state-path with viterbi
         char[] observations = inSeqRolls.toCharArray();
 
-
-        System.out.println("Viterbi: ");
+        System.out.println("generated Viterbi Path: ");
 
         char[] statePath = viterbi(observations);
         System.out.println(String.valueOf(statePath));
 
-        System.out.println("Viterbi State Path is " + (Arrays.equals(statePath, inSeqViterbi.toCharArray()) ? "" : "NOT ") + "equal");
+        System.out.println("loaded and generated Viterbi State Paths are " + (Arrays.equals(statePath, inSeqViterbi.toCharArray()) ? "" : "NOT ") + "equal");
     }
 
-
+    /**
+     * Implementation des Viterbi-Algorithmus
+     *
+     * @param observations Beobachtungsfolge
+     * @return Zustands-Pfad
+     */
     private static char[] viterbi(final char[] observations) {
 
         int[] observationIndices = observationsToIndices(observations);
@@ -94,8 +131,7 @@ public class HMM {
         double[][] tOne = new double[STATE_COUNT][length];
         int[][] tTwo = new int[STATE_COUNT][length];
 
-        for (STATE state : STATE.values()) {
-            int stateIndex = state.ordinal();
+        for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
             tOne[stateIndex][0] = INIT_PROBABILITIES[stateIndex] * EMISSION_MATRIX[stateIndex][observationIndices[0]];
             tTwo[stateIndex][0] = -1;
@@ -103,16 +139,14 @@ public class HMM {
 
         for (int i = 1; i < length; i++) {
 
-            for (STATE state : STATE.values()) {
-                int j = state.ordinal();
+            for (int j = 0; j < STATE_COUNT; j++) {
 
 
                 //find max
                 double maxProbability = -1d;
                 int maxArg = -1;
 
-                for (STATE stateTwo : STATE.values()) {
-                    int stateIndex = stateTwo.ordinal();
+                for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
                     double prob = tOne[stateIndex][i - 1] * TRANSITION_MATRIX[stateIndex][j] * EMISSION_MATRIX[j][observationIndices[i]];
                     if (prob > maxProbability) {
@@ -130,8 +164,7 @@ public class HMM {
         int zT = -1;
         {
             double prob = 0d;
-            for (STATE state : STATE.values()) {
-                int stateIndex = state.ordinal();
+            for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
                 double probIterate = tOne[stateIndex][length - 1];
                 if (probIterate > prob) {
@@ -156,18 +189,30 @@ public class HMM {
         return x;
     }
 
-    private static int[] observationsToIndices(char[] observcations) {
-        int length = observcations.length;
+    /**
+     * mappt Beaobachtung-Folge auf entsprechende Index-Folge
+     *
+     * @param observations Beobachtungs-Folge
+     * @return entsprechende Index-Folge
+     */
+    private static int[] observationsToIndices(final char[] observations) {
+        int length = observations.length;
         int[] ret = new int[length];
 
         for (int i = 0; i < length; i++) {
-            ret[i] = obesrvationToIndex(observcations[i]);
+            ret[i] = obesrvationToIndex(observations[i]);
         }
 
         return ret;
     }
 
-    private static int obesrvationToIndex(char observation) {
+    /**
+     * mappt Beaobachtung auf den entsprechenden Index
+     *
+     * @param observation Beobachtung
+     * @return entsprechender Index
+     */
+    private static int obesrvationToIndex(final char observation) {
         for (int i = 0, observation_spaceLength = OBSERVATION_SPACE.length; i < observation_spaceLength; i++) {
             char c = OBSERVATION_SPACE[i];
             if (c == observation)
@@ -175,60 +220,4 @@ public class HMM {
         }
         return -1;
     }
-
-    /*
-    private static double prob() {
-        int fairState = charToFairState(inSeqRolls.charAt(lenght - 1));
-        int unfairState = charToUnfairState(inSeqRolls.charAt(lenght - 1));
-        return Math.max(viterbi(fairState, lenght) * a(fairState, 0), viterbi(unfairState, lenght) * a(unfairState, 0));
-    }
-
-    private static double viterbi(int state, int pos) {
-        System.out.println("viterbi: state=" + state + " pos=" + pos);
-        if (pos == 0) {
-            if (state == 0)
-                return 1d;
-            else
-                return 0d;
-        }
-        int fairState = charToFairState(inSeqRolls.charAt(pos - 1));
-        int unfairState = charToUnfairState(inSeqRolls.charAt(pos - 1));
-
-        return e(state, inSeqRolls.charAt(pos - 1)) * Math.max(viterbi(fairState, pos - 2) * a(fairState, state), viterbi(unfairState, pos - 2) * a(unfairState, state));
-    }
-
-    private static int charToFairState(char c) {
-        return c - '1' + 1;
-    }
-
-    private static int charToUnfairState(char c) {
-        return charToFairState(c) + 6;
-    }
-
-    /**
-     * zustandswechsel
-     *
-     * @return
-     */
-    /*
-    private static double a(int stateStart, int stateEnd) {
-        if (stateStart == 0 || stateEnd == 0)
-            return 1d;
-        if (stateStart < 7) {
-            if (stateEnd < 7)
-                return 0.95d; // fair to fair
-            else
-                return .05d; // fair to unfair
-        } else {
-            if (stateEnd < 7)
-                return 0.1d; // unfair to fair
-            else
-                return 0.9d; // unfair to unfair
-        }
-    }
-
-    private static double e(int state, char emission) {
-        return INIT_PROBABILITIES[state];
-    }
-    */
 }
