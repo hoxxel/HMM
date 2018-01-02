@@ -11,9 +11,11 @@ public class HMM {
 
     private static final char[] OBSERVATION_SPACE = {'1', '2', '3', '4', '5', '6'};
 
-    private enum STATE_SPACE {
-        FAIR, UNFAIR;
+    private enum STATE {
+        FAIR, UNFAIR
     }
+
+    private static final char[] STATE_CHAR = {'F', 'U'};
 
     private static final double[] INIT_PROBABILITIES = new double[]{.5d, .5d};
     private static final int STATE_COUNT = INIT_PROBABILITIES.length;
@@ -73,21 +75,102 @@ public class HMM {
 
         char[] observations = inSeqRolls.toCharArray();
 
-        //TODO
+        char[] statePath = viterbi(observations);
+        System.out.println(String.valueOf(statePath));
+    }
+
+
+    private static char[] viterbi(final char[] observations) {
+
+        int[] observationIndices = observationsToIndices(observations);
+        int length = observationIndices.length;
+
+        double[][] tOne = new double[STATE_COUNT][length];
+        int[][] tTwo = new int[STATE_COUNT][length];
+
+        for (STATE state : STATE.values()) {
+            int stateIndex = state.ordinal();
+
+            tOne[stateIndex][1] = INIT_PROBABILITIES[stateIndex] * EMISSION_MATRIX[stateIndex][observationIndices[1]];
+            tTwo[stateIndex][1] = -1;
+        }
+
+        for (int i = 1; i < length; i++) {
+
+            for (STATE state : STATE.values()) {
+                int stateIndex = state.ordinal();
+
+                Result result = maxState(tOne, observationIndices, i, stateIndex);
+
+                tOne[stateIndex][i] = result.getProbability();
+                tTwo[stateIndex][i] = result.getArgument();
+            }
+        }
+
+        // ENDE
+        int zT = -1;
+        for (STATE state : STATE.values()) {
+            int stateIndex = state.ordinal();
+
+            double prob = tOne[stateIndex][length - 1];
+            if (prob > zT) {
+                zT = stateIndex;
+            }
+        }
+
+        int[] z = new int[length];
+        char[] x = new char[length];
+
+        z[length - 1] = zT;
+        x[length - 1] = STATE_CHAR[zT];
+
+        for (int i = length - 1; i > 0; i--) {
+            int m = tTwo[z[i]][i];
+            z[i - 1] = m;
+            x[i - 1] = STATE_CHAR[m];
+        }
+
+
+        return x;
+    }
+
+    private static Result maxState(final double[][] tOne, int[] observationIndices, int i, int j) {
+        double maxProbability = -1d;
+        int maxArg = -1;
+
+        for (STATE state : STATE.values()) {
+            int stateIndex = state.ordinal();
+
+            double prob = tOne[stateIndex][i - 1] * TRANSITION_MATRIX[stateIndex][j] * EMISSION_MATRIX[j][observationIndices[i]];
+            if (prob > maxProbability) {
+                maxProbability = prob;
+                maxArg = stateIndex;
+            }
+        }
+        return new Result(maxProbability, maxArg);
+    }
+
+    private static int[] observationsToIndices(char[] observcations) {
+        int length = observcations.length;
+        int[] ret = new int[length];
+
+        for (int i = 0; i < length; i++) {
+            ret[i] = obesrvationToIndex(observcations[i]);
+        }
+
+        return ret;
+    }
+
+    private static int obesrvationToIndex(char observation) {
+        for (int i = 0, observation_spaceLength = OBSERVATION_SPACE.length; i < observation_spaceLength; i++) {
+            char c = OBSERVATION_SPACE[i];
+            if (c == observation)
+                return i;
+        }
+        return -1;
     }
 
     /*
-    private void viterbi() {
-        double v = 1d;
-        int state = 0;
-
-        double fair =
-        double unfair =
-        for (int i = -1; i < lenght; i++) {
-            v = e(state, inSeqRolls.charAt(i + 1))
-        }
-    }
-
     private static double prob() {
         int fairState = charToFairState(inSeqRolls.charAt(lenght - 1));
         int unfairState = charToUnfairState(inSeqRolls.charAt(lenght - 1));
