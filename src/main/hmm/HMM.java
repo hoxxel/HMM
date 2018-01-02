@@ -7,21 +7,25 @@ import main.argparser.Setting;
 
 import java.io.*;
 
-/**
- * states: B/E, 1+, 2+, 3+, 4+, 5+, 6+, 1-, 2-, 3-, 4-, 5-, 6-
- */
 public class HMM {
 
-    public static final double[] PROB = new double[]{1d, 1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6, .1d, .1d, .1d, .1d, .1d, .5d};
+    private static final char[] OBSERVATION_SPACE = {'1', '2', '3', '4', '5', '6'};
 
-    private static Setting filePath = new Setting("file", true);
+    private enum STATE_SPACE {
+        FAIR, UNFAIR;
+    }
 
-    private static String inSeqRolls, inSeqDice, inSeqViterbi;
-    private static int lenght;
+    private static final double[] INIT_PROBABILITIES = new double[]{.5d, .5d};
+    private static final int STATE_COUNT = INIT_PROBABILITIES.length;
+
+
+    private static final double[][] TRANSITION_MATRIX = new double[][]{{.95d, .05d}, {.1d, .9d}};
+    private static final double[][] EMISSION_MATRIX = new double[][]{{1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6}, {.1d, .1d, .1d, .1d, .1d, .5d}};
 
     public static void main(String[] args) {
 
         ParameterSet parameterSet = new ParameterSet();
+        Setting filePath = new Setting("file", true);
         parameterSet.addSetting(filePath);
 
         try {
@@ -44,6 +48,8 @@ public class HMM {
 
 
         System.out.println("reading " + file);
+
+        String inSeqRolls = null, inSeqDice = null, inSeqViterbi = null;
         try {
             inSeqRolls = bufferedReader.readLine(); // first line is dice sequence
             inSeqDice = bufferedReader.readLine();
@@ -61,13 +67,25 @@ public class HMM {
         }
         System.out.println("successfully finished reading file");
 
-        lenght = inSeqRolls.length();
-
         System.out.println(inSeqRolls);
         System.out.println(inSeqDice);
         System.out.println(inSeqViterbi);
 
-        System.out.println(prob());
+        char[] observations = inSeqRolls.toCharArray();
+
+        //TODO
+    }
+
+    /*
+    private void viterbi() {
+        double v = 1d;
+        int state = 0;
+
+        double fair =
+        double unfair =
+        for (int i = -1; i < lenght; i++) {
+            v = e(state, inSeqRolls.charAt(i + 1))
+        }
     }
 
     private static double prob() {
@@ -103,6 +121,7 @@ public class HMM {
      *
      * @return
      */
+    /*
     private static double a(int stateStart, int stateEnd) {
         if (stateStart == 0 || stateEnd == 0)
             return 1d;
@@ -120,6 +139,7 @@ public class HMM {
     }
 
     private static double e(int state, char emission) {
-        return PROB[state];
+        return INIT_PROBABILITIES[state];
     }
+    */
 }
