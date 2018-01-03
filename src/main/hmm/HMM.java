@@ -106,6 +106,12 @@ public class HMM {
         System.out.println(inSeqDice);
         System.out.println(inSeqViterbi);
 
+
+        // convert into logspace (can be done before Viterbi-Algo is running)
+        convertToLogspace(INIT_PROBABILITIES);
+        convertToLogspace(TRANSITION_MATRIX);
+        convertToLogspace(EMISSION_MATRIX);
+
         // generate state-path with viterbi
         char[] observations = inSeqRolls.toCharArray();
 
@@ -114,11 +120,28 @@ public class HMM {
         char[] statePath = viterbi(observations);
         System.out.println(String.valueOf(statePath));
 
-        System.out.println("loaded and generated Viterbi-State-Paths are " + (Arrays.equals(statePath, inSeqViterbi.toCharArray()) ? "" : "NOT ") + "equal");
+        boolean equal = Arrays.equals(statePath, inSeqViterbi.toCharArray());
+        String out = "loaded and generated Viterbi-State-Paths are " + (equal ? "" : "NOT ") + "equal";
+        if (equal)
+            System.out.println(out);
+        else
+            System.err.println(out);
+    }
+
+    private static void convertToLogspace(double[][] matrix) {
+        for (double[] vector : matrix) {
+            convertToLogspace(vector);
+        }
+    }
+
+    private static void convertToLogspace(double[] vector) {
+        for (int j = 0; j < vector.length; j++) {
+            vector[j] = Math.log(vector[j]);
+        }
     }
 
     /**
-     * Implementation des Viterbi-Algorithmus
+     * Implementation des Viterbi-Algorithmus für den logarithmischen Raum
      *
      * @param observations Beobachtungsfolge
      * @return Zustands-Pfad
@@ -134,7 +157,7 @@ public class HMM {
 
         for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-            tOne[stateIndex][0] = INIT_PROBABILITIES[stateIndex] * EMISSION_MATRIX[stateIndex][observationIndices[0]];
+            tOne[stateIndex][0] = INIT_PROBABILITIES[stateIndex] + EMISSION_MATRIX[stateIndex][observationIndices[0]]; // log-space
             tTwo[stateIndex][0] = -1;
         }
 
@@ -145,12 +168,12 @@ public class HMM {
 
 
                 //find max
-                double maxProbability = -1d;
+                double maxProbability = Double.NEGATIVE_INFINITY;
                 int maxArg = -1;
 
                 for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                    double prob = tOne[stateIndex][i - 1] * TRANSITION_MATRIX[stateIndex][j] * EMISSION_MATRIX[j][observationIndices[i]];
+                    double prob = tOne[stateIndex][i - 1] + TRANSITION_MATRIX[stateIndex][j] + EMISSION_MATRIX[j][observationIndices[i]]; // log-space
                     if (prob > maxProbability) {
                         maxProbability = prob;
                         maxArg = stateIndex;
@@ -165,7 +188,7 @@ public class HMM {
         // backtrace init
         int zLast = -1;
         {
-            double probLast = 0d;
+            double probLast = Double.NEGATIVE_INFINITY;
             for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
                 double prob = tOne[stateIndex][length - 1];
