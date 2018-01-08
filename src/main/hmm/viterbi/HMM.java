@@ -152,36 +152,37 @@ public class HMM {
         int[] observationIndices = observationsToIndices(observations);
         int length = observationIndices.length;
 
-        double[][] tOne = new double[STATE_COUNT][length];
-        int[][] tTwo = new int[STATE_COUNT][length];
+        double[][] viterbiVar = new double[STATE_COUNT][length];
+        int[][] viterbiArg = new int[STATE_COUNT][length];
 
+        // init
         for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-            tOne[stateIndex][0] = INIT_PROBABILITIES[stateIndex] + EMISSION_MATRIX[stateIndex][observationIndices[0]]; // log-space
-            tTwo[stateIndex][0] = -1;
+            viterbiVar[stateIndex][0] = INIT_PROBABILITIES[stateIndex] + EMISSION_MATRIX[stateIndex][observationIndices[0]]; // log-space
+            viterbiArg[stateIndex][0] = -1;
         }
 
-        // iterate
+        // iterate observations indices
         for (int i = 1; i < length; i++) {
-
+            // iterate states indices
             for (int j = 0; j < STATE_COUNT; j++) {
 
 
                 //find max
-                double maxProbability = Double.NEGATIVE_INFINITY;
-                int maxArg = -1;
+                double maxProb = Double.NEGATIVE_INFINITY;
+                int maxArg = -1; // maximizing argument
 
                 for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                    double prob = tOne[stateIndex][i - 1] + TRANSITION_MATRIX[stateIndex][j] + EMISSION_MATRIX[j][observationIndices[i]]; // log-space
-                    if (prob > maxProbability) {
-                        maxProbability = prob;
+                    double prob = viterbiVar[stateIndex][i - 1] + TRANSITION_MATRIX[stateIndex][j] + EMISSION_MATRIX[j][observationIndices[i]]; // log-space
+                    if (prob > maxProb) {
+                        maxProb = prob;
                         maxArg = stateIndex;
                     }
                 }
 
-                tOne[j][i] = maxProbability;
-                tTwo[j][i] = maxArg;
+                viterbiVar[j][i] = maxProb;
+                viterbiArg[j][i] = maxArg;
             }
         }
 
@@ -191,7 +192,7 @@ public class HMM {
             double probLast = Double.NEGATIVE_INFINITY;
             for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                double prob = tOne[stateIndex][length - 1];
+                double prob = viterbiVar[stateIndex][length - 1];
                 if (prob > probLast) {
                     zLast = stateIndex;
                     probLast = prob;
@@ -207,7 +208,7 @@ public class HMM {
 
         // backtrace iterate
         for (int i = length - 1; i > 0; i--) {
-            int m = tTwo[z[i]][i];
+            int m = viterbiArg[z[i]][i];
             z[i - 1] = m;
             x[i - 1] = STATE_CHAR[m];
         }
