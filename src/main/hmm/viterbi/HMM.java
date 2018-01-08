@@ -1,4 +1,4 @@
-package main.hmm;
+package main.hmm.viterbi;
 
 import main.argparser.ArgumentParser;
 import main.argparser.ArgumentParserException;
