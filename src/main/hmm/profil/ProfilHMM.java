@@ -14,7 +14,9 @@ public class ProfilHMM {
 
     public static final int PSEUDO_COUNT = 1;
 
-    private static final char[] BASES = {'-', 'A', 'C', 'G', 'U'};
+    private static final char GAP = '-';
+    private static final char[] BASES = {'A', 'C', 'G', 'U'};
+    private static final char[] STATES = {'M', 'I', 'D'};
 
     public static void main(String[] args) {
         // set up Parameter
@@ -46,17 +48,79 @@ public class ProfilHMM {
         }
 
         int length = sequencesTrain.get(0).length();
-        int[][] freq = new int[BASES.length][length];
+        int[] gapCounts = new int[length];
+        int[][] baseCounts = new int[length][BASES.length];
 
         for (String seq : sequencesTrain) {
             for (int i = 0; i < length; i++) {
                 char base = seq.charAt(i);
-                freq[baseToIndex(base)][i]++;
+                if (base == GAP) {
+                    gapCounts[i]++;
+                } else {
+                    baseCounts[i][baseToIndex(base)]++;
+                }
             }
         }
 
-        for (int[] a : freq) {
-            System.out.println(Arrays.toString(a));
+        boolean[] matchState = new boolean[length];
+        int lengthModel = 0;
+
+        {
+            int seqCountHalf = sequencesTrain.size() / 2;
+            for (int i = 0; i < gapCounts.length; i++) {
+                int gapCount = gapCounts[i];
+                if (gapCount <= seqCountHalf) {
+                    lengthModel++;
+                    matchState[i] = true;
+                }
+            }
+        }
+
+        System.out.println(length);
+        System.out.println("Model length = " + lengthModel);
+
+        System.out.println(GAP + " " + Arrays.toString(gapCounts));
+
+/*
+        for (int i = 0; i < baseCounts.length; i++) {
+            int[] a = baseCounts[i];
+            System.out.println(BASES[i] + " " + Arrays.toString(a));
+        }
+        */
+
+        double[][][] transitionProb = new double[lengthModel][3][3];
+        double[][] emissionProb = new double[lengthModel][BASES.length];
+
+        for (int i = 0, indexModel = 0; i < length; i++) {
+            if (matchState[i]) { // if at this column is match-state
+                double[] emissionProbVector = emissionProb[indexModel];
+                int[] baseCountVector = baseCounts[i];
+
+                int sumEmissionCount = 0;
+
+                for (int baseCount : baseCountVector) {
+                    sumEmissionCount += baseCount + PSEUDO_COUNT;
+                }
+
+                for (int j = 0; j < emissionProbVector.length; j++) {
+                    emissionProbVector[j] = ((double) (PSEUDO_COUNT + baseCountVector[j])) / sumEmissionCount;
+                }
+
+                indexModel++;
+            }
+        }
+
+        int sumTransitionFreq;
+
+
+        // output
+        for (int i = 0, j = 0; i < baseCounts.length; i++) {
+            System.out.print(Arrays.toString(baseCounts[i]));
+            if (matchState[i]) {
+                System.out.print("  " + Arrays.toString(emissionProb[j]));
+                j++;
+            }
+            System.out.println();
         }
 
     }
