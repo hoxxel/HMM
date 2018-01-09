@@ -7,9 +7,14 @@ import main.argparser.Setting;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 public class ProfilHMM {
+
+    public static final int PSEUDO_COUNT = 1;
+
+    private static final char[] BASES = {'-', 'A', 'C', 'G', 'U'};
 
     public static void main(String[] args) {
         // set up Parameter
@@ -40,7 +45,29 @@ public class ProfilHMM {
             sequencesTestS = readFile(filePathTestS.getValue());
         }
 
+        int length = sequencesTrain.get(0).length();
+        int[][] freq = new int[BASES.length][length];
 
+        for (String seq : sequencesTrain) {
+            for (int i = 0; i < length; i++) {
+                char base = seq.charAt(i);
+                freq[baseToIndex(base)][i]++;
+            }
+        }
+
+        for (int[] a : freq) {
+            System.out.println(Arrays.toString(a));
+        }
+
+    }
+
+    private static int baseToIndex(char base) {
+        for (int i = 0, basesLength = BASES.length; i < basesLength; i++) {
+            char c = BASES[i];
+            if (c == base)
+                return i;
+        }
+        return -1;
     }
 
     private static List<String> readFile(String filePath) {
