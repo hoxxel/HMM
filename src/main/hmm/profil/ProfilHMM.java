@@ -19,7 +19,8 @@ public class ProfilHMM {
     private static final char GAP = '-';
     private static final char[] BASES = {'A', 'C', 'G', 'U'};
     private static final char[] STATES = {'M', 'I', 'D'};
-    private static final String[] TRANSITIONS = {"MM", "MI", "MD", "IM", "II", "DM", "DD"};
+    private static final String[] TRANSITIONS = {"MM", "MI", "MD", "IM", "II", "ID", "DM", "DI", "DD"};
+    private static final String[] INIT_TRANSITIONS = {"AM", "AI", "AD"};
 
     public static void main(String[] args) {
         // set up Parameter
@@ -108,57 +109,73 @@ public class ProfilHMM {
             }
         }
 
-        int[][] transitionCount = new int[length - 1][TRANSITIONS.length];
-        double[][] transitionProb = new double[length - 1][TRANSITIONS.length];
+        int[][] transitionCount = new int[TRANSITIONS.length][lengthModel + 1];
+        int[] initTransitionCount = new int[INIT_TRANSITIONS.length];
+        double[][] transitionProb = new double[TRANSITIONS.length][lengthModel + 1];
 
 
         for (int i = 0; i < length; i++) {
-            System.out.print(matchState[i] ? "m  " : "i  ");
+            System.out.print(matchState[i] ? "m  " : "\u001B[32mI  \u001B[0m");
         }
-        for (int i1 = 0; i1 < 10; i1++) {
-            System.out.println();
+        System.out.println();
+        for (int i1 = 0; i1 < 7; i1++) {
             String seq = sequencesTrain.get(i1);
-            char lastState = getState(seq, matchState, 0);
 
+            // output sequence
+            System.out.println("\u001B[37m");
             for (int i = 0; i < length; i++) {
                 System.out.print(seq.charAt(i) + "  ");
             }
-            System.out.println();
-            System.out.print(" ");
-            for (int i = 1, indexModel = 0; i < length; i++) {
+            System.out.println("\u001B[0m");
 
-                String transition = "  ";
+
+            // get States and Transitions
+            char lastState = 'A';
+            int insertCount = 0;
+
+            for (int i = 0, iModel = 1; i < length; i++) {
                 char state = getState(seq, matchState, i);
-                if (matchState[i]) {
-                    transition = lastState + "" + state;
-                    lastState = state;
-                    indexModel++;
-                } else {
-                    if (state == 'I' && lastState == 'I' && seq.charAt(i - 1) == GAP) {
-                        transition = "  ";
-                        lastState = state;
-                    } else if (state == 'I') {
-                        transition = lastState + "" + state;
-                        lastState = state;
+                if (state != ' ') {
+
+
+                    if (lastState == 'A') {
+                        initTransitionCount[initTransitionToIndex(lastState + "" + state)]++;
+                    } else {
+
+                        if (state == 'I') {
+                            insertCount++;
+                        }
+                        // End of InsertStates
+                        else {
+                            if (lastState == 'I') {
+                                transitionCount[transitionToIndex("II")][iModel - 1] += insertCount;
+                                insertCount = 0;
+                            }
+                            String transition = lastState + "" + state;
+                            int matrixIndex = iModel;
+                            if (transition.equals("IM") || transition.equals("ID"))
+                                matrixIndex--;
+                            transitionCount[transitionToIndex(transition)][matrixIndex]++;
+
+
+                            iModel++;
+                        }
                     }
+
+                    lastState = state;
                 }
-
-                int pos = i - 1;
-                int indexTrans = transitionToIndex(transition);
-                if (indexTrans > 0) {
-                    transitionCount[pos][indexTrans]++;
-                }
-
-
-                System.out.print(transition + " ");
-
+                System.out.print(state + "  ");
             }
+            System.out.println();
         }
 
+
         System.out.println();
-        System.out.println(Arrays.toString(TRANSITIONS));
-        for (int i = 0; i < 20; i++) {
-            System.out.println(Arrays.toString(transitionCount[i]));
+        for (int i = 0; i < initTransitionCount.length; i++) {
+            System.out.println(INIT_TRANSITIONS[i] + " " + initTransitionCount[i]);
+        }
+        for (int i = 0; i < transitionCount.length; i++) {
+            System.out.println(TRANSITIONS[i] + " " + Arrays.toString(transitionCount[i]));
         }
 
 
@@ -174,12 +191,6 @@ public class ProfilHMM {
         }
         */
 
-        // test
-        String[] strings = new String[]{"UACAAU", "UA-AAU", "U--AAU", "U-CAAU", "U--AAU", "U--AAU", "UACAAU", "U--AAU", "U--AAU"};
-        for (String s : strings) {
-            System.out.println(getState(s, new boolean[]{true, false, false, true, true, true}, 0));
-        }
-
     }
 
     private static char getNextState(String seq, boolean[] matchState, int index) {
@@ -193,17 +204,14 @@ public class ProfilHMM {
 
     private static char getState(String seq, boolean[] matchState, int index) {
 
+        boolean match = matchState[index];
 
-        int length = seq.length();
-
-        // iterate Insert-states
-        while (!matchState[index]) {
+        if (!match) {
             if (seq.charAt(index) != GAP) {
                 return 'I';
+            } else {
+                return ' ';
             }
-            index++;
-            if (index >= length)
-                return 'E';
         }
 
         // at i is a Match-state
@@ -216,16 +224,24 @@ public class ProfilHMM {
         return charToIndex(BASES, base);
     }
 
-    private static int stateToIndex(char base) {
-        return charToIndex(STATES, base);
+    private static int stateToIndex(char state) {
+        return charToIndex(STATES, state);
     }
 
-    private static int transitionToIndex(String s) {
-        for (int i = 0, basesLength = TRANSITIONS.length; i < basesLength; i++) {
-            if (TRANSITIONS[i].equals(s))
+    private static int transitionToIndex(String transition) {
+        for (int i = 0, transitionsLength = TRANSITIONS.length; i < transitionsLength; i++) {
+            if (TRANSITIONS[i].equals(transition))
                 return i;
         }
-        return -1;
+        throw new IllegalArgumentException("Transition " + transition + " not found");
+    }
+
+    private static int initTransitionToIndex(String transition) {
+        for (int i = 0, transitionsLength = INIT_TRANSITIONS.length; i < transitionsLength; i++) {
+            if (INIT_TRANSITIONS[i].equals(transition))
+                return i;
+        }
+        throw new IllegalArgumentException("Transition " + transition + " not found");
     }
 
     private static int charToIndex(char[] array, char c) {
@@ -233,7 +249,7 @@ public class ProfilHMM {
             if (array[i] == c)
                 return i;
         }
-        return -1;
+        throw new IllegalArgumentException("Character " + c + " not found");
     }
 
     private static List<String> readFile(String filePath) {
