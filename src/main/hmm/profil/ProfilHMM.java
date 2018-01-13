@@ -60,7 +60,7 @@ public class ProfilHMM {
             ArgumentParser parser = new ArgumentParser(parameterSet);
             parser.parseArgs(args);
         } catch (ArgumentParserException e) { // if parameter is missing or not intended
-            System.err.println(e.getMessage());
+            Log.e(e.getMessage());
             System.exit(1);
         }
 
@@ -104,8 +104,8 @@ public class ProfilHMM {
             }
         }
 
-        Log.dLine(length);
-        Log.dLine("Model length = " + lengthModel);
+        Log.iLine("Sequence length = " + length);
+        Log.iLine("Model length = " + lengthModel);
 
 
         // calc Emission Prob ---------------------------------------------------------------------------
@@ -133,19 +133,19 @@ public class ProfilHMM {
         for (int i = 0; i < gapCounts.length; i++) {
             Log.d(String.format("%4d ", gapCounts[i]));
         }
-        Log.dLine();
+        Log.line();
         Log.dLine("Nucleotide-Counts and Emission Prob:");
         for (int i = 0; i < baseCounts[0].length; i++) {
             for (int j = 0; j < baseCounts.length; j++) {
 
                 Log.d(String.format("%4d ", baseCounts[j][i]));
             }
-            Log.dLine();
+            Log.line();
             for (int j = 0; j < emissionProb.length; j++) {
 
                 Log.d(String.format("%.2f ", emissionProb[j][i]));
             }
-            Log.dLine();
+            Log.line();
         }
 
         // calc Transition Prob ----------------------------------------------------------------------
@@ -160,7 +160,7 @@ public class ProfilHMM {
         for (int i = 0; i < length; i++) {
             Log.d(matchState[i] ? "m  " : "\u001B[32mI  \u001B[0m");
         }
-        Log.dLine();
+        Log.line();
         for (int i1 = 0; i1 < 10; i1++) {
             String seq = sequencesTrain.get(i1);
 
@@ -207,12 +207,12 @@ public class ProfilHMM {
                 }
                 Log.d(state + "  ");
             }
-            Log.dLine();
+            Log.line();
         }
 
 
         // output Transition Counts
-        Log.dLine();
+        Log.line();
         for (int i = 0; i < initTransitionCount.length; i++) {
             Log.dLine(INIT_TRANSITIONS[i] + " " + initTransitionCount[i]);
         }
@@ -297,18 +297,18 @@ public class ProfilHMM {
 
         List<String> ret = null;
 
-        Log.dLine("reading " + filePath);
+        Log.iLine("reading " + filePath);
         try {
             ret = FastaParser.parseFile(filePath);
         } catch (FileNotFoundException e) {
-            System.err.println("ERROR: file " + filePath + " not found");
+            Log.e("ERROR: file " + filePath + " not found");
             System.exit(1);
         } catch (IOException e) {
-            System.err.println("ERROR: while reading file " + filePath);
+            Log.e("ERROR: while reading file " + filePath);
             System.exit(1);
         }
 
-        Log.dLine("successfully finished reading file");
+        Log.iLine("successfully finished reading file");
 
         return ret;
     }

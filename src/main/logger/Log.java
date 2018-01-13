@@ -6,18 +6,29 @@ public class Log {
 
     private static SimpleDateFormat time_formatter = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    private static boolean printDebug = true;
+    private static boolean printDebug = false;
     private static boolean printError = true;
+    private static boolean printInfo = true;
     private static boolean addTime = false;
+
+    public synchronized static void line() {
+        if (printDebug)
+            System.out.println();
+    }
 
     public synchronized static void e(String text) {
         if (printError)
             System.err.println(time() + text);
     }
 
-    public synchronized static void dLine() {
-        if (printDebug)
-            System.out.println();
+    public synchronized static void iLine(String text) {
+        if (printInfo)
+            System.out.println(time() + text);
+    }
+
+    public synchronized static void i(String text) {
+        if (printInfo)
+            System.out.print(text);
     }
 
     public synchronized static void dLine(int i) {
