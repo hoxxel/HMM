@@ -1,4 +1,4 @@
-package main.hmm.profil;
+package main.logger;
 
 import java.text.SimpleDateFormat;
 

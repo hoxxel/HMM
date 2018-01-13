@@ -4,6 +4,7 @@ import main.argparser.ArgumentParser;
 import main.argparser.ArgumentParserException;
 import main.argparser.ParameterSet;
 import main.argparser.Setting;
+import main.logger.Log;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

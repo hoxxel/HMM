@@ -1,4 +1,4 @@
-package main.hmm.viterbi;
+package main.hmm.casino;
 
 import main.argparser.ArgumentParser;
 import main.argparser.ArgumentParserException;
@@ -19,7 +19,7 @@ import java.util.Arrays;
  * Gibt Daten der Datei aus.
  * Generiert anhand der eingelesenen beobachteten Sequenz einen Zustands-Pfad mittels des Viterbi-Algorithmus und gibt diesen aus. F = Fair, L = Loaded.
  */
-public class HMM {
+public class CasinoHMM {
 
     /**
      * beobachtbare Ereignisse
