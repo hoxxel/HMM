@@ -40,7 +40,8 @@ public class ProfilHMM {
 
     private static final char GAP = '-';
     private static final char[] BASES = {'A', 'C', 'G', 'U'};
-    private static final char[] STATES = {'M', 'I', 'D'};
+    private static final char STATE_MATCH = 'M', STATE_INSERT = 'I', STATE_DELETE = 'D', STATE_BEGIN = 'B', STATE_END = 'E', STATE_IGNORE = ' ';
+    private static final char[] STATES = {STATE_MATCH, STATE_INSERT, STATE_DELETE};
     private static final String[] TRANSITIONS = {"MM", "MI", "MD", "IM", "II", "ID", "DM", "DI", "DD"};
     private static final String[] INIT_TRANSITIONS = {"BM", "BI", "BD"};
     private static final String[] END_TRANSITIONS = {"ME", "IE", "DE"};
@@ -128,7 +129,6 @@ public class ProfilHMM {
 
 
         // output
-
         Log.dLine("Gap-Counts:");
         for (int i = 0; i < gapCounts.length; i++) {
             Log.d(String.format("%4d ", gapCounts[i]));
@@ -147,16 +147,6 @@ public class ProfilHMM {
             }
             Log.dLine();
         }
-
-/*
-        for (int i = 0; i < baseCounts.length; i++) {
-            Log.d(gapCounts[i]);
-            Log.d("  " + Arrays.toString(baseCounts[i]));
-            Log.d("  " + Arrays.toString(emissionProb[i]));
-
-            Log.dLine();
-        }
-        */
 
         // calc Transition Prob ----------------------------------------------------------------------
 
@@ -183,31 +173,31 @@ public class ProfilHMM {
 
 
             // get States and Transitions
-            char lastState = 'B';
+            char lastState = STATE_BEGIN;
             int insertCount = 0;
 
             for (int i = 0, iModel = 0; i < length + 1; i++) {
                 char state = getState(seq, matchState, i);
-                if (state != ' ') {
-                    if (state == 'E') {
+                if (state != STATE_IGNORE) {
+                    if (state == STATE_END) {
                         endTransitionCount[endTransitionToIndex(lastState + "" + state)]++;
-                    } else if (lastState == 'B') {
+                    } else if (lastState == STATE_BEGIN) {
                         initTransitionCount[initTransitionToIndex(lastState + "" + state)]++;
-                        if (state == 'M' || state == 'D') // no Insert-State in first column
+                        if (state == STATE_MATCH || state == STATE_DELETE) // no Insert-State in first column
                             iModel++;
                     } else {
 
-                        if (state == 'I') {
+                        if (state == STATE_INSERT) {
                             insertCount++;
                         }
                         // End of InsertStates
                         else {
-                            if (lastState == 'I') {
-                                transitionCount[transitionToIndex("II")][iModel] += insertCount;
+                            if (lastState == STATE_INSERT) {
+                                transitionCount[transitionToIndex(STATE_INSERT + "" + lastState)][iModel] += insertCount;
                                 insertCount = 0;
                             }
-                            String transition = lastState + "" + state;
-                            transitionCount[transitionToIndex(transition)][iModel]++;
+
+                            transitionCount[transitionToIndex(lastState + "" + state)][iModel]++;
 
                             iModel++;
                         }
@@ -221,6 +211,7 @@ public class ProfilHMM {
         }
 
 
+        // output Transition Counts
         Log.dLine();
         for (int i = 0; i < initTransitionCount.length; i++) {
             Log.dLine(INIT_TRANSITIONS[i] + " " + initTransitionCount[i]);
@@ -234,32 +225,41 @@ public class ProfilHMM {
 
     }
 
+    /**
+     * gibt den Zustand zurueck, in dem sich das HMM an uebergebenem index in uebergebener Sequenz befindet
+     * oder ein Leerzeichen, falls sich das Modell an der Stelle im Insert-Zustand befindet, aber kein Zeichen in der Sequenz vorhanden ist.
+     * Das uebergebene Feld matchState muss auskunft darueber geben, ob sich das Modell an uebergebenem index im Insert- oder Match-Zustand befindet (true falls Match-Zustand).
+     *
+     * @param seq        Sequenz
+     * @param matchState Insert- oder Match-Zustaende
+     * @param index      position Sequenz
+     * @return Zustand
+     */
     private static char getState(String seq, boolean[] matchState, int index) {
 
         if (index >= seq.length())
-            return 'E';
+            return STATE_END;
 
         boolean match = matchState[index];
 
         if (!match) {
             if (seq.charAt(index) != GAP) {
-                return 'I';
+                return STATE_INSERT;
             } else {
-                return ' ';
+                return STATE_IGNORE;
             }
         }
 
         // at i is a Match-state
         if (seq.charAt(index) == GAP)
-            return 'D';
-        return 'M';
+            return STATE_DELETE;
+        return STATE_MATCH;
     }
 
     private static int transitionToIndex(String transition) {
         return transitionToIndex(TRANSITIONS, transition);
 
     }
-
     private static int initTransitionToIndex(String transition) {
         return transitionToIndex(INIT_TRANSITIONS, transition);
     }
