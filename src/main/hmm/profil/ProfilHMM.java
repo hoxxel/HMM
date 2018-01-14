@@ -1,13 +1,7 @@
 package main.hmm.profil;
 
-import main.argparser.ArgumentParser;
-import main.argparser.ArgumentParserException;
-import main.argparser.ParameterSet;
-import main.argparser.Setting;
 import main.logger.Log;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.List;
 
 public class ProfilHMM {
@@ -41,42 +35,25 @@ public class ProfilHMM {
     private static final char[] BASES = {'A', 'C', 'G', 'U'};
     private static final char STATE_MATCH = 'M', STATE_INSERT = 'I', STATE_DELETE = 'D', STATE_BEGIN = 'B', STATE_END = 'E', STATE_IGNORE = ' ';
     private static final char[] STATES = {STATE_MATCH, STATE_INSERT, STATE_DELETE};
-    //private static final String[] TRANSITIONS = {"MM", "MI", "MD", "IM", "II", "ID", "DM", "DI", "DD"};
     private static final Trans[] TRANSITIONS = {new Trans(STATE_MATCH, STATE_MATCH), new Trans(STATE_MATCH, STATE_INSERT), new Trans(STATE_MATCH, STATE_DELETE),
             new Trans(STATE_INSERT, STATE_MATCH), new Trans(STATE_INSERT, STATE_INSERT), new Trans(STATE_INSERT, STATE_DELETE),
             new Trans(STATE_DELETE, STATE_MATCH), new Trans(STATE_DELETE, STATE_INSERT), new Trans(STATE_DELETE, STATE_DELETE)};
     private static final Trans[] INIT_TRANSITIONS = {new Trans(STATE_BEGIN, STATE_MATCH), new Trans(STATE_BEGIN, STATE_INSERT), new Trans(STATE_BEGIN, STATE_DELETE)};
-    //private static final String[] END_TRANSITIONS = {"ME", "IE", "DE"};
     private static final Trans[] END_TRANSITIONS = {new Trans(STATE_MATCH, STATE_END), new Trans(STATE_INSERT, STATE_END), new Trans(STATE_DELETE, STATE_END)};
 
-    public static void main(String[] args) {
-        // set up Parameter
-        ParameterSet parameterSet = new ParameterSet();
-        Setting filePathTrain = new Setting("filetrain", true);
-        Setting filePathTestF = new Setting("filetestshort", false); //TODO req
-        Setting filePathTestS = new Setting("filetrainfull", false); // TODO req
-        parameterSet.addSetting(filePathTrain);
-        parameterSet.addSetting(filePathTestF);
-        parameterSet.addSetting(filePathTestS);
 
-        try {
-            ArgumentParser parser = new ArgumentParser(parameterSet);
-            parser.parseArgs(args);
-        } catch (ArgumentParserException e) { // if parameter is missing or not intended
-            Log.e(e.getMessage());
-            System.exit(1);
-        }
+    private double[][] emissionProb;
+    private double[] initTransitionProb;
+    private double[][] transitionProb;
 
-        List<String> sequencesTrain = readFile(filePathTrain.getValue());
-        List<String> sequencesTestF;
-        List<String> sequencesTestS;
+    public ProfilHMM() {
+    }
 
-        if (filePathTestF.isSet()) {
-            sequencesTestF = readFile(filePathTestF.getValue());
-        }
-        if (filePathTestS.isSet()) {
-            sequencesTestS = readFile(filePathTestS.getValue());
-        }
+    public ProfilHMM(List<String> sequencesTrain) {
+        buildModel(sequencesTrain);
+    }
+
+    public void buildModel(List<String> sequencesTrain) {
 
         // find Match or Insertion-States and Model length --------------------------------------------------------
         int length = sequencesTrain.get(0).length();
@@ -113,7 +90,7 @@ public class ProfilHMM {
 
         // calc Emission Prob ---------------------------------------------------------------------------
 
-        double[][] emissionProb = new double[length][BASES.length]; // emission-probability for match- and insert states
+        emissionProb = new double[length][BASES.length]; // emission-probability for match- and insert states
 
         for (int i = 0; i < length; i++) {
             double[] emissionProbVector = emissionProb[i];
@@ -136,40 +113,41 @@ public class ProfilHMM {
         for (int i = 0; i < length; i++) {
             Log.d(matchState[i] ? "   m " : "\u001B[32m   I \u001B[0m");
         }
-        Log.line();
+        Log.dLine();
 
         for (int i = 0; i < gapCounts.length; i++) {
             Log.d(String.format("%4d ", gapCounts[i]));
         }
-        Log.line();
+        Log.dLine();
         Log.dLine("Nucleotide-Counts and Emission Prob:");
         for (int i = 0; i < baseCounts[0].length; i++) {
             for (int j = 0; j < baseCounts.length; j++) {
 
                 Log.d(String.format("%4d ", baseCounts[j][i]));
             }
-            Log.line();
+            Log.dLine();
             for (int j = 0; j < emissionProb.length; j++) {
 
                 Log.d(String.format("%.2f ", emissionProb[j][i]));
             }
-            Log.line();
+            Log.dLine();
         }
 
-        Log.line();
+        Log.dLine();
 
         // calc Transition Count ----------------------------------------------------------------------
 
-        int[][] transitionCount = new int[TRANSITIONS.length][lengthModel];
+        int[][] transitionCount = new int[TRANSITIONS.length][lengthModel + 1];
         int[] initTransitionCount = new int[INIT_TRANSITIONS.length];
         int[] endTransitionCount = new int[END_TRANSITIONS.length];
 
 
+        Log.d("    ");
         for (int i = 0; i < length; i++) {
-            Log.d(matchState[i] ? "m  " : "\u001B[32mI  \u001B[0m");
+            Log.d(matchState[i] ? "  m" : "\u001B[32m  I\u001B[0m");
         }
-        Log.line();
-        for (int i1 = 0; i1 < sequencesTrain.size(); i1++) {
+        Log.dLine();
+        for (int i1 = 0; i1 < 10; i1++) {
             String seq = sequencesTrain.get(i1);
 
             // output sequence
@@ -197,12 +175,14 @@ public class ProfilHMM {
                             iModel++;
                     } else {
 
-                        if (state == STATE_INSERT) {
+                        if (state == STATE_INSERT && lastState == STATE_INSERT) {
                             insertCount++;
+                        } else if (state == STATE_INSERT) {
+                            transitionCount[transitionToIndex(lastState, state)][iModel]++;
                         }
                         // End of InsertStates
                         else {
-                            if (lastState == STATE_INSERT) {
+                            if (lastState == STATE_INSERT) { // set Insert-Insert
                                 transitionCount[transitionToIndex(STATE_INSERT, lastState)][iModel] += insertCount;
                                 insertCount = 0;
                             }
@@ -217,12 +197,12 @@ public class ProfilHMM {
                 }
                 Log.d("  " + state);
             }
-            Log.line();
+            Log.dLine();
         }
 
 
         // output Transition Counts
-        Log.line();
+        Log.dLine();
         for (int i = 0; i < initTransitionCount.length; i++) {
             Log.dLine(INIT_TRANSITIONS[i] + ":  " + String.format("%4d ", initTransitionCount[i]));
         }
@@ -231,7 +211,7 @@ public class ProfilHMM {
             for (int j = 0; j < transitionCount[i].length; j++) {
                 Log.d(String.format("%4d ", transitionCount[i][j]));
             }
-            Log.line();
+            Log.dLine();
 
         }
         for (int i = 0; i < endTransitionCount.length; i++) {
@@ -240,7 +220,7 @@ public class ProfilHMM {
 
 
         // calc Transition Prob ----------------------------------------------------------------------
-        double[] initTransitionProb = new double[INIT_TRANSITIONS.length];
+        initTransitionProb = new double[INIT_TRANSITIONS.length];
         {
             int sumInitTrans = 0;
             for (int anInitTransitionCount : initTransitionCount) {
@@ -252,8 +232,8 @@ public class ProfilHMM {
             }
         }
 
-        double[][] transitionProb = new double[TRANSITIONS.length][lengthModel];
-        for (int i = 0; i < lengthModel; i++) {
+        transitionProb = new double[TRANSITIONS.length][lengthModel + 1];
+        for (int i = 0; i < lengthModel + 1; i++) {
 
             int[] sumTrans = new int[STATES.length]; // vergleichsgroessen
             for (int j = 0; j < transitionCount.length; j++) {
@@ -267,11 +247,9 @@ public class ProfilHMM {
             }
         }
 
-        double[] endTransitionProb = new double[END_TRANSITIONS.length];
-
 
         // output Transition Prob
-        Log.line();
+        Log.dLine();
         Log.dLine("Transition Prob: ");
         for (int i = 0; i < transitionProb.length; i++) {
             double[] transProbVector = transitionProb[i];
@@ -279,7 +257,7 @@ public class ProfilHMM {
             for (double prob : transProbVector) {
                 Log.d(String.format("%.2f ", prob));
             }
-            Log.line();
+            Log.dLine();
         }
     }
 
@@ -352,25 +330,4 @@ public class ProfilHMM {
         }
         throw new IllegalArgumentException("Character " + c + " not found");
     }
-
-    private static List<String> readFile(String filePath) {
-
-        List<String> ret = null;
-
-        Log.iLine("reading " + filePath);
-        try {
-            ret = FastaParser.parseFile(filePath);
-        } catch (FileNotFoundException e) {
-            Log.e("ERROR: file " + filePath + " not found");
-            System.exit(1);
-        } catch (IOException e) {
-            Log.e("ERROR: while reading file " + filePath);
-            System.exit(1);
-        }
-
-        Log.iLine("successfully finished reading file");
-
-        return ret;
-    }
-
 }

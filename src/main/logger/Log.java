@@ -11,13 +11,14 @@ public class Log {
     private static boolean printInfo = true;
     private static boolean addTime = false;
 
-    public synchronized static void line() {
-        System.out.println();
-    }
-
     public synchronized static void e(String text) {
         if (printError)
             System.err.println(time() + text);
+    }
+
+    public synchronized static void iLine() {
+        if (printInfo)
+            System.out.println();
     }
 
     public synchronized static void iLine(String text) {
@@ -28,6 +29,11 @@ public class Log {
     public synchronized static void i(String text) {
         if (printInfo)
             System.out.print(text);
+    }
+
+    public synchronized static void dLine() {
+        if (printDebug)
+            System.out.println();
     }
 
     public synchronized static void dLine(int i) {

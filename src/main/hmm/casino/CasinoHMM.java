@@ -1,13 +1,5 @@
 package main.hmm.casino;
 
-import main.argparser.ArgumentParser;
-import main.argparser.ArgumentParserException;
-import main.argparser.ParameterSet;
-import main.argparser.Setting;
-
-import java.io.*;
-import java.util.Arrays;
-
 /**
  * Aufgabe: Implementieren Sie den Viterbi-Algorithmus fuer das HMM zu dem Beispiel des
  * unehrlichen Casinos, wie in der Vorlesung vorgestellt (siehe auch im Buch von
@@ -15,9 +7,7 @@ import java.util.Arrays;
  * <p>
  * Anhand  https://en.wikipedia.org/wiki/Viterbi_algorithm  implementiert.
  * <p>
- * Ausfuehrbare Klasse, den Dateipfad als Parameter (-file <Path>) uebergeben bekommen muss.
- * Gibt Daten der Datei aus.
- * Generiert anhand der eingelesenen beobachteten Sequenz einen Zustands-Pfad mittels des Viterbi-Algorithmus und gibt diesen aus. F = Fair, L = Loaded.
+ * Generiert anhand der eingelesenen beobachteten Sequenz einen Zustands-Pfad mittels des Viterbi-Algorithmus. F = Fair, L = Loaded.
  */
 public class CasinoHMM {
 
@@ -39,101 +29,44 @@ public class CasinoHMM {
     /**
      * Uebergangswahrscheinlichen aus dem Startzustand in die jeweiligen Zustaende
      */
-    private static final double[] INIT_PROBABILITIES = new double[]{.5d, .5d};
+    private final double[] INIT_PROBABILITIES = new double[]{.5d, .5d};
 
     /**
      * Uebergangswahrscheinlichen zwischen den Zustaenden
      */
-    private static final double[][] TRANSITION_MATRIX = new double[][]{{.95d, .05d}, {.1d, .9d}};
+    private final double[][] TRANSITION_MATRIX = new double[][]{{.95d, .05d}, {.1d, .9d}};
     /**
      * Beobachtungswahrscheinlichketen der Ereignisse in den jeweiligen Zustaenden
      */
-    private static final double[][] EMISSION_MATRIX = new double[][]{{1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6}, {.1d, .1d, .1d, .1d, .1d, .5d}};
+    private final double[][] EMISSION_MATRIX = new double[][]{{1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6, 1d / 6}, {.1d, .1d, .1d, .1d, .1d, .5d}};
 
     /**
-     * ausfuehrbare Methode
-     *
-     * @param args Argumente
+     * Konstruktor.
+     * Konvertiert die Matrizen fuer die Uebergangswahrscheinlichen und Beobachtungswahrscheinlichketen in den logarithmischen Raum
      */
-    public static void main(String[] args) {
-
-        // set up Parameter
-        ParameterSet parameterSet = new ParameterSet();
-        Setting filePath = new Setting("file", true);
-        parameterSet.addSetting(filePath);
-
-        try {
-            ArgumentParser parser = new ArgumentParser(parameterSet);
-            parser.parseArgs(args);
-        } catch (ArgumentParserException e) { // if parameter is missing or not intended
-            System.err.println(e.getMessage());
-            System.exit(1);
-        }
-
-        // reading file
-        File file = new File(filePath.getValue());
-        BufferedReader bufferedReader = null;
-        try {
-            bufferedReader = new BufferedReader(new FileReader(file));
-        } catch (FileNotFoundException e) {
-            System.err.println("ERROR: file " + file + " not found");
-            System.exit(1);
-        }
-
-        System.out.println("reading " + file);
-
-        String inSeqRolls = null, inSeqDice = null, inSeqViterbi = null;
-        try {
-            inSeqRolls = bufferedReader.readLine(); // first line is dice sequence
-            inSeqDice = bufferedReader.readLine();
-            inSeqViterbi = bufferedReader.readLine();
-        } catch (IOException e) {
-            System.err.println("ERROR: while reading file " + file);
-            System.exit(1);
-        } finally {
-            try {
-                bufferedReader.close();
-            } catch (IOException e) {
-                System.err.println("ERROR: while closing reader");
-                System.exit(1);
-            }
-        }
-        System.out.println("successfully finished reading file");
-
-
-        // print file data
-        System.out.println(inSeqRolls);
-        System.out.println(inSeqDice);
-        System.out.println(inSeqViterbi);
-
-
+    public CasinoHMM() {
         // convert into logspace (can be done before Viterbi-Algo is running)
         convertToLogspace(INIT_PROBABILITIES);
         convertToLogspace(TRANSITION_MATRIX);
         convertToLogspace(EMISSION_MATRIX);
-
-        // generate state-path with viterbi
-        char[] observations = inSeqRolls.toCharArray();
-
-        System.out.println("generated Viterbi Path: ");
-
-        char[] statePath = viterbi(observations);
-        System.out.println(String.valueOf(statePath));
-
-        boolean equal = Arrays.equals(statePath, inSeqViterbi.toCharArray());
-        String out = "loaded and generated Viterbi-State-Paths are " + (equal ? "" : "NOT ") + "equal";
-        if (equal)
-            System.out.println(out);
-        else
-            System.err.println(out);
     }
 
+    /**
+     * Konvertiert die uebergebene Matrix als Nebeneffekt in den logarithmischen Raum
+     *
+     * @param matrix Matrix
+     */
     private static void convertToLogspace(double[][] matrix) {
         for (double[] vector : matrix) {
             convertToLogspace(vector);
         }
     }
 
+    /**
+     * Konvertiert den uebergebenen Vektor als Nebeneffekt in den logarithmischen Raum
+     *
+     * @param vector Vektor
+     */
     private static void convertToLogspace(double[] vector) {
         for (int j = 0; j < vector.length; j++) {
             vector[j] = Math.log(vector[j]);
@@ -146,7 +79,7 @@ public class CasinoHMM {
      * @param observations Beobachtungsfolge
      * @return Zustands-Pfad
      */
-    private static char[] viterbi(final char[] observations) {
+    public char[] viterbi(final char[] observations) {
 
         // init
         int[] observationIndices = observationsToIndices(observations);
