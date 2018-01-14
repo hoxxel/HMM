@@ -6,14 +6,13 @@ public class Log {
 
     private static SimpleDateFormat time_formatter = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    private static boolean printDebug = false;
+    private static boolean printDebug = true;
     private static boolean printError = true;
     private static boolean printInfo = true;
     private static boolean addTime = false;
 
     public synchronized static void line() {
-        if (printDebug)
-            System.out.println();
+        System.out.println();
     }
 
     public synchronized static void e(String text) {
