@@ -17,8 +17,8 @@ public class ProfilHMMMain {
         // set up Parameter
         ParameterSet parameterSet = new ParameterSet();
         Setting filePathTrain = new Setting("filetrain", true);
-        Setting filePathTestF = new Setting("filetestshort", false); //TODO req
-        Setting filePathTestS = new Setting("filetrainfull", false); // TODO req
+        Setting filePathTestF = new Setting("filetestf", true); //TODO req
+        Setting filePathTestS = new Setting("filetests", false); // TODO req
         parameterSet.addSetting(filePathTrain);
         parameterSet.addSetting(filePathTestF);
         parameterSet.addSetting(filePathTestS);
@@ -35,7 +35,8 @@ public class ProfilHMMMain {
 
         ProfilHMM model = new ProfilHMM(sequencesTrain);
 
-        List<String> sequencesTestF;
+        Log.iLine();
+        List<String> sequencesTestF = null;
         List<String> sequencesTestS;
 
         if (filePathTestF.isSet()) {
@@ -44,6 +45,11 @@ public class ProfilHMMMain {
         if (filePathTestS.isSet()) {
             sequencesTestS = readFile(filePathTestS.getValue());
         }
+
+        Log.iLine("Generated Viterbi Path: ");
+        char[] observ = sequencesTestF.get(0).toCharArray();
+        char[] statePath = model.viterbi(observ);
+        Log.iLine(String.valueOf(statePath));
     }
 
     private static List<String> readFile(String filePath) {

@@ -56,7 +56,7 @@ public class CasinoHMM {
      *
      * @param matrix Matrix
      */
-    private static void convertToLogspace(double[][] matrix) {
+    public static void convertToLogspace(double[][] matrix) {
         for (double[] vector : matrix) {
             convertToLogspace(vector);
         }
@@ -67,7 +67,7 @@ public class CasinoHMM {
      *
      * @param vector Vektor
      */
-    private static void convertToLogspace(double[] vector) {
+    public static void convertToLogspace(double[] vector) {
         for (int j = 0; j < vector.length; j++) {
             vector[j] = Math.log(vector[j]);
         }

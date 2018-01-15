@@ -1,5 +1,6 @@
 package main.hmm.profil;
 
+import main.hmm.casino.CasinoHMM;
 import main.logger.Log;
 
 import java.util.List;
@@ -35,6 +36,7 @@ public class ProfilHMM {
     private static final char[] BASES = {'A', 'C', 'G', 'U'};
     private static final char STATE_MATCH = 'M', STATE_INSERT = 'I', STATE_DELETE = 'D', STATE_BEGIN = 'B', STATE_END = 'E', STATE_IGNORE = ' ';
     private static final char[] STATES = {STATE_MATCH, STATE_INSERT, STATE_DELETE};
+    private static final int STATE_COUNT = STATES.length;
     private static final Trans[] TRANSITIONS = {new Trans(STATE_MATCH, STATE_MATCH), new Trans(STATE_MATCH, STATE_INSERT), new Trans(STATE_MATCH, STATE_DELETE),
             new Trans(STATE_INSERT, STATE_MATCH), new Trans(STATE_INSERT, STATE_INSERT), new Trans(STATE_INSERT, STATE_DELETE),
             new Trans(STATE_DELETE, STATE_MATCH), new Trans(STATE_DELETE, STATE_INSERT), new Trans(STATE_DELETE, STATE_DELETE)};
@@ -51,6 +53,11 @@ public class ProfilHMM {
 
     public ProfilHMM(List<String> sequencesTrain) {
         buildModel(sequencesTrain);
+
+        // convert into logspace (can be done before Viterbi-Algo is running)
+        CasinoHMM.convertToLogspace(initTransitionProb);
+        CasinoHMM.convertToLogspace(transitionProb);
+        CasinoHMM.convertToLogspace(emissionProb);
     }
 
     public void buildModel(List<String> sequencesTrain) {
@@ -119,7 +126,7 @@ public class ProfilHMM {
             Log.d(String.format("%4d ", gapCounts[i]));
         }
         Log.dLine();
-        Log.dLine("Nucleotide-Counts and Emission Prob:");
+        Log.dLine("Nucleotide-Counts and Emission Prob: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")");
         for (int i = 0; i < baseCounts[0].length; i++) {
             for (int j = 0; j < baseCounts.length; j++) {
 
@@ -136,6 +143,7 @@ public class ProfilHMM {
         Log.dLine();
 
         // calc Transition Count ----------------------------------------------------------------------
+        Log.dLine("States and Transition Counts:");
 
         int[][] transitionCount = new int[TRANSITIONS.length][lengthModel + 1];
         int[] initTransitionCount = new int[INIT_TRANSITIONS.length];
@@ -249,17 +257,117 @@ public class ProfilHMM {
 
 
         // output Transition Prob
-        Log.dLine();
-        Log.dLine("Transition Prob: ");
+        Log.iLine();
+        Log.iLine("Transition Prob: (Pseudo-Count = " + PSEUDO_COUNT_TRANSITION + ")");
+
+        for (int i = 0; i < initTransitionProb.length; i++) {
+            Log.iLine(String.format("%s:  %s", INIT_TRANSITIONS[i].toString(), initTransitionProb[i]));
+        }
         for (int i = 0; i < transitionProb.length; i++) {
             double[] transProbVector = transitionProb[i];
-            Log.d(String.format("%s:  ", TRANSITIONS[i].toString()));
+            Log.i(String.format("%s:  ", TRANSITIONS[i].toString()));
             for (double prob : transProbVector) {
-                Log.d(String.format("%.2f ", prob));
+                Log.i(String.format("%.2f ", prob));
             }
-            Log.dLine();
+            Log.iLine();
         }
     }
+
+
+    /**
+     * Implementation des Viterbi-Algorithmus für den logarithmischen Raum
+     *
+     * @param observations Beobachtungsfolge
+     * @return Zustands-Pfad
+     */
+    public char[] viterbi(final char[] observations) {
+
+        // init
+        int[] observationIndices = basesToIndices(observations);
+        int length = observationIndices.length;
+
+        double[][] viterbiVar = new double[STATE_COUNT][length];
+        int[][] viterbiArg = new int[STATE_COUNT][length];
+
+        // init
+        for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
+
+            viterbiVar[stateIndex][0] = initTransitionProb[stateIndex] + emissionProb[stateIndex][observationIndices[0]]; // log-space FIXME
+            viterbiArg[stateIndex][0] = -1;
+        }
+
+        // iterate observations indices
+        for (int i = 1; i < length; i++) {
+            // iterate states indices
+            for (int j = 0; j < STATE_COUNT; j++) {
+
+
+                //find max
+                double maxProb = Double.NEGATIVE_INFINITY;
+                int maxArg = -1; // maximizing argument
+
+                for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
+
+                    double prob = viterbiVar[stateIndex][i - 1] + transitionProb[stateIndex][j] + emissionProb[j][observationIndices[i]]; // log-space FIXME
+                    if (prob > maxProb) {
+                        maxProb = prob;
+                        maxArg = stateIndex;
+                    }
+                }
+
+                viterbiVar[j][i] = maxProb;
+                viterbiArg[j][i] = maxArg;
+            }
+        }
+
+        // backtrace init
+        int zLast = -1;
+        {
+            double probLast = Double.NEGATIVE_INFINITY;
+            for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
+
+                double prob = viterbiVar[stateIndex][length - 1];
+                if (prob > probLast) {
+                    zLast = stateIndex;
+                    probLast = prob;
+                }
+            }
+        }
+
+        int[] z = new int[length]; // stateIndexPath
+        char[] x = new char[length]; // statePath
+
+        z[length - 1] = zLast;
+        x[length - 1] = STATES[zLast];
+
+        // backtrace iterate
+        for (int i = length - 1; i > 0; i--) {
+            int m = viterbiArg[z[i]][i];
+            z[i - 1] = m;
+            x[i - 1] = STATES[m];
+        }
+
+        return x;
+    }
+
+
+    /**
+     * mappt Beaobachtung-Folge auf entsprechende Index-Folge
+     *
+     * @param observations Beobachtungs-Folge
+     * @return entsprechende Index-Folge
+     */
+    private static int[] basesToIndices(final char[] observations) {
+        int length = observations.length;
+        int[] ret = new int[length];
+
+        for (int i = 0; i < length; i++) {
+            ret[i] = baseToIndex(observations[i]);
+        }
+
+        return ret;
+    }
+
 
     /**
      * gibt den Zustand zurueck, in dem sich das HMM an uebergebenem index in uebergebener Sequenz befindet

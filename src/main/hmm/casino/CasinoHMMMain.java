@@ -78,7 +78,7 @@ public class CasinoHMMMain {
         // generate state-path with viterbi
         char[] observations = inSeqRolls.toCharArray();
 
-        System.out.println("generated Viterbi Path: ");
+        System.out.println("Generated Viterbi Path: ");
 
         char[] statePath = model.viterbi(observations);
         System.out.println(String.valueOf(statePath));
