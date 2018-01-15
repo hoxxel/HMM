@@ -7,7 +7,9 @@ package main.hmm.casino;
  * <p>
  * Anhand  https://en.wikipedia.org/wiki/Viterbi_algorithm  implementiert.
  * <p>
- * Generiert anhand der eingelesenen beobachteten Sequenz einen Zustands-Pfad mittels des Viterbi-Algorithmus. F = Fair, L = Loaded.
+ * Enthaelt die Implementation des Viterbi-Algorithmus, der aus einer uebergebenen Sequenz einen Zustands-Pfad generiert. F = Fair, L = Loaded.
+ *
+ * @author Soren Metje
  */
 public class CasinoHMM {
 

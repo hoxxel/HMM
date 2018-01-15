@@ -1,5 +1,6 @@
 package main.hmm.profil;
 
+import main.fastaparser.Sequence;
 import main.hmm.casino.CasinoHMM;
 import main.logger.Log;
 
@@ -51,7 +52,7 @@ public class ProfilHMM {
     public ProfilHMM() {
     }
 
-    public ProfilHMM(List<String> sequencesTrain) {
+    public ProfilHMM(List<Sequence> sequencesTrain) {
         buildModel(sequencesTrain);
 
         // convert into logspace (can be done before Viterbi-Algo is running)
@@ -60,16 +61,16 @@ public class ProfilHMM {
         CasinoHMM.convertToLogspace(emissionProb);
     }
 
-    public void buildModel(List<String> sequencesTrain) {
+    public void buildModel(List<Sequence> sequencesTrain) {
 
         // find Match or Insertion-States and Model length --------------------------------------------------------
-        int length = sequencesTrain.get(0).length();
+        int length = sequencesTrain.get(0).getSequence().length();
         int[] gapCounts = new int[length];
         int[][] baseCounts = new int[length][BASES.length];
 
-        for (String seq : sequencesTrain) {
+        for (Sequence seq : sequencesTrain) {
             for (int i = 0; i < length; i++) {
-                char base = seq.charAt(i);
+                char base = seq.getSequence().charAt(i);
                 if (base == GAP) {
                     gapCounts[i]++;
                 } else {
@@ -156,13 +157,14 @@ public class ProfilHMM {
         }
         Log.dLine();
         for (int i1 = 0; i1 < 10; i1++) {
-            String seq = sequencesTrain.get(i1);
+            Sequence sequence = sequencesTrain.get(i1);
+            String sequenceString = sequence.getSequence();
 
             // output sequence
             Log.dLine("\u001B[37m");
-            Log.d(String.format("%3d:", i1));
+            Log.d(String.format("%5s", sequence.getDescription()));
             for (int i = 0; i < length; i++) {
-                Log.d("  " + seq.charAt(i));
+                Log.d("  " + sequenceString.charAt(i));
             }
             Log.dLine("\u001B[0m");
 
@@ -173,7 +175,7 @@ public class ProfilHMM {
 
             Log.d("    ");
             for (int i = 0, iModel = 0; i < length + 1; i++) {
-                char state = getState(seq, matchState, i);
+                char state = getState(sequenceString, matchState, i);
                 if (state != STATE_IGNORE) {
                     if (state == STATE_END) {
                         endTransitionCount[endTransitionToIndex(lastState, state)]++;
@@ -232,11 +234,11 @@ public class ProfilHMM {
         {
             int sumInitTrans = 0;
             for (int anInitTransitionCount : initTransitionCount) {
-                sumInitTrans += anInitTransitionCount;
+                sumInitTrans += anInitTransitionCount + PSEUDO_COUNT_TRANSITION;
             }
 
             for (int i = 0; i < initTransitionCount.length; i++) {
-                initTransitionProb[i] = ((double) initTransitionCount[i]) / sumInitTrans;
+                initTransitionProb[i] = ((double) initTransitionCount[i] + PSEUDO_COUNT_TRANSITION) / sumInitTrans;
             }
         }
 
@@ -261,7 +263,7 @@ public class ProfilHMM {
         Log.iLine("Transition Prob: (Pseudo-Count = " + PSEUDO_COUNT_TRANSITION + ")");
 
         for (int i = 0; i < initTransitionProb.length; i++) {
-            Log.iLine(String.format("%s:  %s", INIT_TRANSITIONS[i].toString(), initTransitionProb[i]));
+            Log.iLine(String.format("%s:  %.2f", INIT_TRANSITIONS[i].toString(), initTransitionProb[i]));
         }
         for (int i = 0; i < transitionProb.length; i++) {
             double[] transProbVector = transitionProb[i];

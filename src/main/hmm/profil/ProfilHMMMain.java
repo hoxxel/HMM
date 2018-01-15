@@ -4,6 +4,9 @@ import main.argparser.ArgumentParser;
 import main.argparser.ArgumentParserException;
 import main.argparser.ParameterSet;
 import main.argparser.Setting;
+import main.fastaparser.FastaParser;
+import main.fastaparser.FastaParserException;
+import main.fastaparser.Sequence;
 import main.logger.Log;
 
 import java.io.FileNotFoundException;
@@ -31,13 +34,13 @@ public class ProfilHMMMain {
             System.exit(1);
         }
 
-        List<String> sequencesTrain = readFile(filePathTrain.getValue());
+        List<Sequence> sequencesTrain = readFile(filePathTrain.getValue());
 
         ProfilHMM model = new ProfilHMM(sequencesTrain);
 
         Log.iLine();
-        List<String> sequencesTestF = null;
-        List<String> sequencesTestS;
+        List<Sequence> sequencesTestF = null;
+        List<Sequence> sequencesTestS;
 
         if (filePathTestF.isSet()) {
             sequencesTestF = readFile(filePathTestF.getValue());
@@ -47,14 +50,14 @@ public class ProfilHMMMain {
         }
 
         Log.iLine("Generated Viterbi Path: ");
-        char[] observ = sequencesTestF.get(0).toCharArray();
+        char[] observ = sequencesTestF.get(0).getSequence().toCharArray();
         char[] statePath = model.viterbi(observ);
         Log.iLine(String.valueOf(statePath));
     }
 
-    private static List<String> readFile(String filePath) {
+    private static List<Sequence> readFile(String filePath) {
 
-        List<String> ret = null;
+        List<Sequence> ret = null;
 
         Log.iLine("reading " + filePath);
         try {
@@ -65,6 +68,8 @@ public class ProfilHMMMain {
         } catch (IOException e) {
             Log.e("ERROR: while reading file " + filePath);
             System.exit(1);
+        } catch (FastaParserException e) {
+            Log.e("ERROR: while parsing file " + filePath + ": " + e.getMessage());
         }
 
         Log.iLine("successfully finished reading file");

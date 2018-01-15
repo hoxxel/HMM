@@ -1,7 +1,7 @@
 package main.argparser;
 
 /**
- * exception, die bei fehler beim parsen ausgeloesst wird.
+ * exception, die bei Parse-Fehlern durch {@link ArgumentParser} ausgeloesst wird.
  *
  * @author Dominick Leppich
  * @author Soeren Metje
