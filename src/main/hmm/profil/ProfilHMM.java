@@ -45,7 +45,8 @@ public class ProfilHMM {
     private static final Trans[] END_TRANSITIONS = {new Trans(STATE_MATCH, STATE_END), new Trans(STATE_INSERT, STATE_END), new Trans(STATE_DELETE, STATE_END)};
 
 
-    private double[][] emissionProb;
+    private double[][] emissionProbMatch;
+    private double[][] emissionProbInsert;
     private double[] initTransitionProb;
     private double[][] transitionProb;
 
@@ -58,7 +59,8 @@ public class ProfilHMM {
         // convert into logspace (can be done before Viterbi-Algo is running)
         CasinoHMM.convertToLogspace(initTransitionProb);
         CasinoHMM.convertToLogspace(transitionProb);
-        CasinoHMM.convertToLogspace(emissionProb);
+        CasinoHMM.convertToLogspace(emissionProbMatch);
+        CasinoHMM.convertToLogspace(emissionProbInsert);
     }
 
     public void buildModel(List<Sequence> sequencesTrain) {
@@ -98,20 +100,64 @@ public class ProfilHMM {
 
         // calc Emission Prob ---------------------------------------------------------------------------
 
-        emissionProb = new double[length][BASES.length]; // emission-probability for match- and insert states
+        emissionProbMatch = new double[lengthModel + 1][BASES.length]; // emission-probabilities for match-states
+        emissionProbInsert = new double[lengthModel + 1][BASES.length]; // emission-probabilities for insert-states
 
-        for (int i = 0; i < length; i++) {
-            double[] emissionProbVector = emissionProb[i];
-            int[] baseCountVector = baseCounts[i];
 
-            int sumEmissionCount = 0;
+        int[] baseCountsInsert = new int[BASES.length];
+        for (int i = 0, iModel = 0; i < length + 1; i++) { // FIXME distinguish between match and insert
 
-            for (int baseCount : baseCountVector) {
-                sumEmissionCount += baseCount + PSEUDO_COUNT_EMISSION;
+            boolean end = i >= length;
+
+            if (end || matchState[i]) {
+                // set Insert-State Prob
+                {
+                    double[] emissionProbVector = emissionProbInsert[iModel];
+
+                    int sumEmissionCount = 0;
+
+                    for (int baseCount : baseCountsInsert) {
+                        sumEmissionCount += baseCount + PSEUDO_COUNT_EMISSION;
+                    }
+
+                    for (int j = 0; j < emissionProbVector.length; j++) {
+                        emissionProbVector[j] = ((double) (PSEUDO_COUNT_EMISSION + baseCountsInsert[j])) / sumEmissionCount;
+                    }
+                }
+
             }
 
-            for (int j = 0; j < emissionProbVector.length; j++) {
-                emissionProbVector[j] = ((double) (PSEUDO_COUNT_EMISSION + baseCountVector[j])) / sumEmissionCount;
+            if (!end) {
+                if (matchState[i]) {
+                    // set Match-State Prob
+                    {
+                        double[] emissionProbVector = emissionProbMatch[iModel];
+                        int[] baseCountVector = baseCounts[i];
+
+                        int sumEmissionCount = 0;
+
+                        for (int baseCount : baseCountVector) {
+                            sumEmissionCount += baseCount + PSEUDO_COUNT_EMISSION;
+                        }
+
+                        for (int j = 0; j < emissionProbVector.length; j++) {
+                            emissionProbVector[j] = ((double) (PSEUDO_COUNT_EMISSION + baseCountVector[j])) / sumEmissionCount;
+                        }
+                    }
+
+                    // reset Inset-State-Counts
+                    for (int j = 0; j < baseCountsInsert.length; j++) {
+                        baseCountsInsert[j] = 0;
+                    }
+
+                    iModel++;
+                }
+                // Insert-State
+                else {
+                    for (int j = 0; j < baseCountsInsert.length; j++) {
+                        baseCountsInsert[j] += baseCounts[i][j];
+                    }
+                }
             }
         }
 
@@ -127,16 +173,31 @@ public class ProfilHMM {
             Log.d(String.format("%4d ", gapCounts[i]));
         }
         Log.dLine();
-        Log.dLine("Nucleotide-Counts and Emission Prob: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")");
+        Log.dLine("Nucleotide-Counts: ");
         for (int i = 0; i < baseCounts[0].length; i++) {
             for (int j = 0; j < baseCounts.length; j++) {
 
                 Log.d(String.format("%4d ", baseCounts[j][i]));
             }
             Log.dLine();
-            for (int j = 0; j < emissionProb.length; j++) {
+        }
 
-                Log.d(String.format("%.2f ", emissionProb[j][i]));
+        Log.dLine();
+        Log.dLine("Emission Prob Match: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")");
+        for (int i = 0; i < emissionProbMatch[0].length; i++) {
+            for (int j = 0; j < emissionProbMatch.length; j++) {
+
+                Log.d(String.format("%.2f ", emissionProbMatch[j][i]));
+            }
+            Log.dLine();
+        }
+
+        Log.dLine();
+        Log.dLine("Emission Prob Insert: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")");
+        for (int i = 0; i < emissionProbInsert[0].length; i++) {
+            for (int j = 0; j < emissionProbInsert.length; j++) {
+
+                Log.d(String.format("%.2f ", emissionProbInsert[j][i]));
             }
             Log.dLine();
         }
@@ -294,7 +355,7 @@ public class ProfilHMM {
         // init
         for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-            viterbiVar[stateIndex][0] = initTransitionProb[stateIndex] + emissionProb[stateIndex][observationIndices[0]]; // log-space FIXME
+            viterbiVar[stateIndex][0] = initTransitionProb[stateIndex] + emissionProbMatch[stateIndex][observationIndices[0]]; // log-space  // FIXME distinguish between match and insert
             viterbiArg[stateIndex][0] = -1;
         }
 
@@ -310,7 +371,7 @@ public class ProfilHMM {
 
                 for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                    double prob = viterbiVar[stateIndex][i - 1] + transitionProb[stateIndex][j] + emissionProb[j][observationIndices[i]]; // log-space FIXME
+                    double prob = viterbiVar[stateIndex][i - 1] + transitionProb[stateIndex][j] + emissionProbMatch[j][observationIndices[i]]; // log-space  // FIXME distinguish between match and insert
                     if (prob > maxProb) {
                         maxProb = prob;
                         maxArg = stateIndex;
