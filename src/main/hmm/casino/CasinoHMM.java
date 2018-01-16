@@ -54,6 +54,17 @@ public class CasinoHMM {
     }
 
     /**
+     * Konvertiert die uebergebene 3-dimensionale Matrix als Nebeneffekt in den logarithmischen Raum
+     *
+     * @param raum Raum
+     */
+    public static void convertToLogspace(double[][][] raum) {
+        for (double[][] matrix : raum) {
+            convertToLogspace(matrix);
+        }
+    }
+
+    /**
      * Konvertiert die uebergebene Matrix als Nebeneffekt in den logarithmischen Raum
      *
      * @param matrix Matrix

@@ -31,6 +31,14 @@ public class Log {
             System.out.print(text);
     }
 
+    public synchronized static void i(int text) {
+        i(String.valueOf(text));
+    }
+
+    public static void i(double v) {
+        i(String.valueOf(v));
+    }
+
     public synchronized static void dLine() {
         if (printDebug)
             System.out.println();

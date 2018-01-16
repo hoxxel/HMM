@@ -19,12 +19,10 @@ public class ProfilHMMMain {
     public static void main(String[] args) {
         // set up Parameter
         ParameterSet parameterSet = new ParameterSet();
-        Setting filePathTrain = new Setting("filetrain", true);
-        Setting filePathTestF = new Setting("filetestf", true); //TODO req
-        Setting filePathTestS = new Setting("filetests", false); // TODO req
-        parameterSet.addSetting(filePathTrain);
-        parameterSet.addSetting(filePathTestF);
-        parameterSet.addSetting(filePathTestS);
+        Setting paramFileTrain = new Setting("filetrain", true);
+        Setting paramFileTest = new Setting("filetest", true);
+        parameterSet.addSetting(paramFileTrain);
+        parameterSet.addSetting(paramFileTest);
 
         try {
             ArgumentParser parser = new ArgumentParser(parameterSet);
@@ -34,25 +32,23 @@ public class ProfilHMMMain {
             System.exit(1);
         }
 
-        List<Sequence> sequencesTrain = readFile(filePathTrain.getValue());
+        List<Sequence> sequencesTrain = readFile(paramFileTrain.getValue());
 
         ProfilHMM model = new ProfilHMM(sequencesTrain);
 
         Log.iLine();
-        List<Sequence> sequencesTestF = null;
-        List<Sequence> sequencesTestS;
 
-        if (filePathTestF.isSet()) {
-            sequencesTestF = readFile(filePathTestF.getValue());
-        }
-        if (filePathTestS.isSet()) {
-            sequencesTestS = readFile(filePathTestS.getValue());
-        }
+        List<Sequence> sequencesTest = readFile(paramFileTest.getValue());
 
-        Log.iLine("Generated Viterbi Path: ");
-        char[] observ = sequencesTestF.get(0).getSequence().toCharArray();
-        char[] statePath = model.viterbi(observ);
-        Log.iLine(String.valueOf(statePath));
+        for (int i = 0; i < sequencesTest.size(); i++) {
+
+            char[] observ = sequencesTest.get(i).getSequence().toCharArray();
+            char[] statePath = model.viterbi(observ);
+
+            Log.iLine(String.valueOf(observ));
+            Log.iLine(String.valueOf(statePath));
+            Log.iLine();
+        }
     }
 
     private static List<Sequence> readFile(String filePath) {
