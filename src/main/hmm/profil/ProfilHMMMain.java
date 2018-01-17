@@ -66,6 +66,7 @@ public class ProfilHMMMain {
             System.exit(1);
         } catch (FastaParserException e) {
             Log.e("ERROR: while parsing file " + filePath + ": " + e.getMessage());
+            System.exit(1);
         }
 
         Log.iLine("successfully finished reading file");

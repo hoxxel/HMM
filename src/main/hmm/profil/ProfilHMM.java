@@ -1,7 +1,6 @@
 package main.hmm.profil;
 
 import main.fastaparser.Sequence;
-import main.hmm.casino.CasinoHMM;
 import main.logger.Log;
 
 import java.util.List;
@@ -31,7 +30,7 @@ public class ProfilHMM {
 
     public static final int PSEUDO_COUNT_EMISSION = 1;
     public static final int PSEUDO_COUNT_TRANSITION = 1;
-    public static final double THRESHOLD_MATCHSTATE = .5d; // min amount of nucleotides (no gap) to count column as match-state
+    public static final double THRESHOLD_MATCHSTATE = .7d; // min amount of nucleotides (no gap) to count column as match-state // TODO .5
 
     private static final char GAP = '-';
     private static final char[] BASES = {'A', 'C', 'G', 'U'};
@@ -56,9 +55,11 @@ public class ProfilHMM {
         buildModel(sequencesTrain);
 
         // convert into logspace (can be done before Viterbi-Algo is running)
+        /* // TODO
         CasinoHMM.convertToLogspace(transitionProb);
         CasinoHMM.convertToLogspace(emissionProbMatch);
         CasinoHMM.convertToLogspace(emissionProbInsert);
+        */
     }
 
     public synchronized void buildModel(List<Sequence> sequencesTrain) {
@@ -207,7 +208,6 @@ public class ProfilHMM {
         Log.dLine("States and Transition Counts:");
 
         int[][][] transitionCount = new int[STATES.length][STATES.length][lengthModel];
-        int[] endTransitionCount = new int[END_TRANSITIONS.length];
 
 
         Log.d("    ");
@@ -236,27 +236,24 @@ public class ProfilHMM {
             for (int i = 0, iModel = 0; i < length + 1; i++) {
                 char state = getState(sequenceString, matchState, i);
                 if (state != STATE_IGNORE) {
-                    if (state == STATE_END) {
-                        endTransitionCount[endTransitionToIndex(lastState, state)]++;
-                    } else {
 
-                        if (state == STATE_INSERT && lastState == STATE_INSERT) {
-                            insertCount++;
-                        } else if (state == STATE_INSERT) {
-                            transitionCount[stateToIndex(lastState)][stateToIndex(state)][iModel]++;
-                        }
-                        // End of InsertStates
-                        else {
-                            if (lastState == STATE_INSERT) { // set Insert-Insert
-                                transitionCount[stateToIndex(STATE_INSERT)][stateToIndex(lastState)][iModel] += insertCount;
-                                insertCount = 0;
-                            }
-
-                            transitionCount[stateToIndex(lastState)][stateToIndex(state)][iModel]++;
-
-                            iModel++;
-                        }
+                    if (state == STATE_INSERT && lastState == STATE_INSERT) {
+                        insertCount++;
+                    } else if (state == STATE_INSERT) {
+                        transitionCount[stateToIndex(lastState)][stateToIndex(state)][iModel]++;
                     }
+                    // End of InsertStates (interpreting start and End as Match-state)
+                    else {
+                        if (lastState == STATE_INSERT) { // set Insert-Insert
+                            transitionCount[stateToIndex(STATE_INSERT)][stateToIndex(lastState)][iModel] += insertCount;
+                            insertCount = 0;
+                        }
+
+                        transitionCount[stateToIndex(lastState)][stateToIndex(state)][iModel]++;
+
+                        iModel++;
+                    }
+
 
                     lastState = state;
                 }
@@ -281,9 +278,6 @@ public class ProfilHMM {
                 }
                 Log.dLine();
             }
-        }
-        for (int i = 0; i < endTransitionCount.length; i++) {
-            Log.dLine(END_TRANSITIONS[i] + ":  " + String.format("%4d ", endTransitionCount[i]));
         }
 
 
@@ -357,6 +351,7 @@ public class ProfilHMM {
         int[] observationIndices = basesToIndices(observations);
         int length = observationIndices.length + 1;
 
+        // FILL MATRIX ----------------------------------------------------------------------------------
         double[][][] viterbiVar = new double[STATE_COUNT][length][lengthModel];
         int[][][] viterbiArg = new int[STATE_COUNT][length][lengthModel];
 
@@ -364,20 +359,20 @@ public class ProfilHMM {
         for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
             char state = STATES[stateIndex];
             if (state == STATE_MATCH) {
-                viterbiVar[stateIndex][0][0] = 0;
+                viterbiVar[stateIndex][0][0] = 1; // TODO 0
                 for (int j = 1; j < lengthModel; j++) {
-                    viterbiVar[stateIndex][0][j] = Double.NEGATIVE_INFINITY;
+                    viterbiVar[stateIndex][0][j] = 0; // TODO -inf
                 }
                 for (int i = 1; i < length; i++) {
-                    viterbiVar[stateIndex][i][0] = Double.NEGATIVE_INFINITY;
+                    viterbiVar[stateIndex][i][0] = 0;
                 }
             } else if (state == STATE_INSERT) {
                 for (int j = 0; j < lengthModel; j++) {
-                    viterbiVar[stateIndex][0][j] = Double.NEGATIVE_INFINITY;
+                    viterbiVar[stateIndex][0][j] = 0;
                 }
             } else if (state == STATE_DELETE) {
                 for (int i = 0; i < length; i++) {
-                    viterbiVar[stateIndex][i][0] = Double.NEGATIVE_INFINITY;
+                    viterbiVar[stateIndex][i][0] = 0;
                 }
             }
         }
@@ -397,29 +392,30 @@ public class ProfilHMM {
         }
         Log.iLine();
 
-        // iterate observations indices
-        for (int i = 1; i < length; i++) {
-            // iterate model indices
-            for (int j = 1; j < lengthModel; j++) {
-                // iterate states indices
-                for (int s = 0; s < STATE_COUNT; s++) {
+        // iterate states indices
+        for (int s = 0; s < STATE_COUNT; s++) {
+            char state = STATES[s];
+            int shiftI = 0, shiftJ = 0;
+            if (state == STATE_MATCH) {
+                shiftI = 1;
+                shiftJ = 1;
+            } else if (state == STATE_INSERT) {
+                shiftI = 1;
+            } else if (state == STATE_DELETE) {
+                shiftJ = 1;
+            }
 
-                    char state = STATES[s];
+            // iterate observations indices
+            for (int i = 1; i < length; i++) {
+                // iterate model indices
+                for (int j = 1; j < lengthModel; j++) {
 
-                    double emissionProb = 0d; // 0 is neutral element of addition (log-space)
 
-                    int nextI = i;
-                    int nextJ = j;
-
+                    double emissionProb = 1d; // 0 is neutral element of addition (log-space) // TODO 0
                     if (state == STATE_MATCH) {
-                        nextI = i - 1;
-                        nextJ = j - 1;
                         emissionProb = emissionProbMatch[j][observationIndices[i - 1]];
                     } else if (state == STATE_INSERT) {
-                        nextI = i - 1;
                         emissionProb = emissionProbInsert[j][observationIndices[i - 1]];
-                    } else if (state == STATE_DELETE) {
-                        nextJ = j - 1;
                     }
 
                     //find max
@@ -428,14 +424,14 @@ public class ProfilHMM {
 
                     for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                        double prob = viterbiVar[stateIndex][nextI][nextJ] + transitionProb[s][stateIndex][nextJ]; // log-space
+                        double prob = viterbiVar[stateIndex][i - shiftI][j - shiftJ] * transitionProb[stateIndex][s][j - shiftJ]; // log-space // TODO +
                         if (prob > maxProb) {
                             maxProb = prob;
                             maxArg = stateIndex;
                         }
                     }
 
-                    viterbiVar[s][i][j] = emissionProb + maxProb;
+                    viterbiVar[s][i][j] = emissionProb * maxProb; // TODO +
                     viterbiArg[s][i][j] = maxArg;
                 }
             }
@@ -447,7 +443,7 @@ public class ProfilHMM {
             for (int k = 0; k < STATES.length; k++) {
                 Log.i((k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " "));
                 for (int i = 0; i < length; i++) {
-                    Log.i(String.format("%.4s ", String.format("%f", viterbiVar[k][i][j])));
+                    Log.i(String.format("%.5s ", String.format("%f", viterbiVar[k][i][j])));
                 }
                 Log.iLine();
             }
@@ -455,6 +451,7 @@ public class ProfilHMM {
         }
         Log.iLine();
 
+        // BACKTRACE -------------------------------------------------------------------------------------
         // backtrace init
         int zLast = -1;
         {
@@ -478,12 +475,17 @@ public class ProfilHMM {
         // backtrace iterate // FIXME
         {
             int i = length - 1, j = lengthModel - 1;
-            while (i > 0 && j > 0) {
+            while (i > 0 && j >= 0) {
                 int stateIndex = viterbiArg[stateIndexPath[i]][i][j];
                 char state = STATES[stateIndex];
 
-                stateIndexPath[i - 1] = stateIndex;
-                statePath[i - 1] = state;
+                if (i == 1) {
+                    stateIndexPath[i - 1] = -1;
+                    statePath[i - 1] = 'A';
+                } else {
+                    stateIndexPath[i - 1] = stateIndex;
+                    statePath[i - 1] = state;
+                }
                 if (state == STATE_MATCH) {
                     i--;
                     j--;
@@ -545,7 +547,7 @@ public class ProfilHMM {
     private static char getState(String seq, boolean[] matchState, int index) {
 
         if (index >= seq.length())
-            return STATE_END;
+            return STATE_MATCH; // ende
 
         boolean match = matchState[index];
 
