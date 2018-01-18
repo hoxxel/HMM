@@ -28,7 +28,7 @@ public class ProfilHMMMain {
             ArgumentParser parser = new ArgumentParser(parameterSet);
             parser.parseArgs(args);
         } catch (ArgumentParserException e) { // if parameter is missing or not intended
-            Log.e(e.getMessage());
+            Log.eLine(e.getMessage());
             System.exit(1);
         }
 
@@ -59,13 +59,13 @@ public class ProfilHMMMain {
         try {
             ret = FastaParser.parseFile(filePath);
         } catch (FileNotFoundException e) {
-            Log.e("ERROR: file " + filePath + " not found");
+            Log.eLine("ERROR: file " + filePath + " not found");
             System.exit(1);
         } catch (IOException e) {
-            Log.e("ERROR: while reading file " + filePath);
+            Log.eLine("ERROR: while reading file " + filePath);
             System.exit(1);
         } catch (FastaParserException e) {
-            Log.e("ERROR: while parsing file " + filePath + ": " + e.getMessage());
+            Log.eLine("ERROR: while parsing file " + filePath + ": " + e.getMessage());
             System.exit(1);
         }
 

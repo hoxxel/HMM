@@ -1,5 +1,7 @@
 package main.hmm.casino;
 
+import main.hmm.HMM;
+
 /**
  * Aufgabe: Implementieren Sie den Viterbi-Algorithmus fuer das HMM zu dem Beispiel des
  * unehrlichen Casinos, wie in der Vorlesung vorgestellt (siehe auch im Buch von
@@ -48,43 +50,11 @@ public class CasinoHMM {
      */
     public CasinoHMM() {
         // convert into logspace (can be done before Viterbi-Algo is running)
-        convertToLogspace(INIT_PROBABILITIES);
-        convertToLogspace(TRANSITION_MATRIX);
-        convertToLogspace(EMISSION_MATRIX);
+        HMM.convertToLogspace(INIT_PROBABILITIES);
+        HMM.convertToLogspace(TRANSITION_MATRIX);
+        HMM.convertToLogspace(EMISSION_MATRIX);
     }
 
-    /**
-     * Konvertiert die uebergebene 3-dimensionale Matrix als Nebeneffekt in den logarithmischen Raum
-     *
-     * @param raum Raum
-     */
-    public static void convertToLogspace(double[][][] raum) {
-        for (double[][] matrix : raum) {
-            convertToLogspace(matrix);
-        }
-    }
-
-    /**
-     * Konvertiert die uebergebene Matrix als Nebeneffekt in den logarithmischen Raum
-     *
-     * @param matrix Matrix
-     */
-    public static void convertToLogspace(double[][] matrix) {
-        for (double[] vector : matrix) {
-            convertToLogspace(vector);
-        }
-    }
-
-    /**
-     * Konvertiert den uebergebenen Vektor als Nebeneffekt in den logarithmischen Raum
-     *
-     * @param vector Vektor
-     */
-    public static void convertToLogspace(double[] vector) {
-        for (int j = 0; j < vector.length; j++) {
-            vector[j] = Math.log(vector[j]);
-        }
-    }
 
     /**
      * Implementation des Viterbi-Algorithmus für den logarithmischen Raum
@@ -169,14 +139,7 @@ public class CasinoHMM {
      * @return entsprechende Index-Folge
      */
     private static int[] observationsToIndices(final char[] observations) {
-        int length = observations.length;
-        int[] ret = new int[length];
-
-        for (int i = 0; i < length; i++) {
-            ret[i] = obesrvationToIndex(observations[i]);
-        }
-
-        return ret;
+        return HMM.charsToIndices(OBSERVATION_SPACE, observations);
     }
 
     /**
@@ -186,11 +149,6 @@ public class CasinoHMM {
      * @return entsprechender Index
      */
     private static int obesrvationToIndex(final char observation) {
-        for (int i = 0, observation_spaceLength = OBSERVATION_SPACE.length; i < observation_spaceLength; i++) {
-            char c = OBSERVATION_SPACE[i];
-            if (c == observation)
-                return i;
-        }
-        return -1;
+        return HMM.charToIndex(OBSERVATION_SPACE, observation);
     }
 }

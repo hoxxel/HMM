@@ -1,6 +1,7 @@
 package main.hmm.profil;
 
 import main.fastaparser.Sequence;
+import main.hmm.HMM;
 import main.logger.Log;
 
 import java.util.List;
@@ -37,10 +38,6 @@ public class ProfilHMM {
     private static final char STATE_MATCH = 'M', STATE_INSERT = 'I', STATE_DELETE = 'D', STATE_END = 'E', STATE_IGNORE = ' ';
     private static final char[] STATES = {STATE_MATCH, STATE_INSERT, STATE_DELETE};
     private static final int STATE_COUNT = STATES.length;
-    private static final Trans[] TRANSITIONS = {new Trans(STATE_MATCH, STATE_MATCH), new Trans(STATE_MATCH, STATE_INSERT), new Trans(STATE_MATCH, STATE_DELETE),
-            new Trans(STATE_INSERT, STATE_MATCH), new Trans(STATE_INSERT, STATE_INSERT), new Trans(STATE_INSERT, STATE_DELETE),
-            new Trans(STATE_DELETE, STATE_MATCH), new Trans(STATE_DELETE, STATE_INSERT), new Trans(STATE_DELETE, STATE_DELETE)};
-    private static final Trans[] END_TRANSITIONS = {new Trans(STATE_MATCH, STATE_END), new Trans(STATE_INSERT, STATE_END), new Trans(STATE_DELETE, STATE_END)};
 
 
     private double[][] emissionProbMatch;
@@ -56,9 +53,9 @@ public class ProfilHMM {
 
         // convert into logspace (can be done before Viterbi-Algo is running)
         /* // TODO
-        CasinoHMM.convertToLogspace(transitionProb);
-        CasinoHMM.convertToLogspace(emissionProbMatch);
-        CasinoHMM.convertToLogspace(emissionProbInsert);
+        HMM.convertToLogspace(transitionProb);
+        HMM.convertToLogspace(emissionProbMatch);
+        HMM.convertToLogspace(emissionProbInsert);
         */
     }
 
@@ -76,7 +73,7 @@ public class ProfilHMM {
                 if (base == GAP) {
                     gapCounts[i]++;
                 } else {
-                    baseCounts[i][baseToIndex(base)]++;
+                    baseCounts[i][observationToIndex(base)]++;
                 }
             }
         }
@@ -348,7 +345,7 @@ public class ProfilHMM {
         Log.iLine("Viterbi ProfilHMM -----------------------------");
 
         // init
-        int[] observationIndices = basesToIndices(observations);
+        int[] observationIndices = observationsToIndices(observations);
         int length = observationIndices.length + 1;
 
         // FILL MATRIX ----------------------------------------------------------------------------------
@@ -395,28 +392,25 @@ public class ProfilHMM {
         // iterate states indices
         for (int s = 0; s < STATE_COUNT; s++) {
             char state = STATES[s];
+
             int shiftI = 0, shiftJ = 0;
+            double[][] emissionProbMatrix = null;
             if (state == STATE_MATCH) {
                 shiftI = 1;
                 shiftJ = 1;
+                emissionProbMatrix = emissionProbMatch;
             } else if (state == STATE_INSERT) {
                 shiftI = 1;
+                emissionProbMatrix = emissionProbInsert;
             } else if (state == STATE_DELETE) {
                 shiftJ = 1;
-            }
+            } else
+                throw new RuntimeException("no valid state");
 
             // iterate observations indices
             for (int i = 1; i < length; i++) {
                 // iterate model indices
                 for (int j = 1; j < lengthModel; j++) {
-
-
-                    double emissionProb = 1d; // 0 is neutral element of addition (log-space) // TODO 0
-                    if (state == STATE_MATCH) {
-                        emissionProb = emissionProbMatch[j][observationIndices[i - 1]];
-                    } else if (state == STATE_INSERT) {
-                        emissionProb = emissionProbInsert[j][observationIndices[i - 1]];
-                    }
 
                     //find max
                     double maxProb = Double.NEGATIVE_INFINITY;
@@ -431,6 +425,10 @@ public class ProfilHMM {
                         }
                     }
 
+                    double emissionProb = 1d; // 0 is neutral element of addition (log-space) // TODO 0
+                    if (emissionProbMatrix != null) {
+                        emissionProb = emissionProbMatrix[j][observationIndices[i - 1]];
+                    }
                     viterbiVar[s][i][j] = emissionProb * maxProb; // TODO +
                     viterbiArg[s][i][j] = maxArg;
                 }
@@ -449,7 +447,6 @@ public class ProfilHMM {
             }
             Log.iLine();
         }
-        Log.iLine();
 
         // BACKTRACE -------------------------------------------------------------------------------------
         // backtrace init
@@ -515,25 +512,6 @@ public class ProfilHMM {
         return statePath;
     }
 
-
-    /**
-     * mappt Beaobachtung-Folge auf entsprechende Index-Folge
-     *
-     * @param observations Beobachtungs-Folge
-     * @return entsprechende Index-Folge
-     */
-    private static int[] basesToIndices(final char[] observations) {
-        int length = observations.length;
-        int[] ret = new int[length];
-
-        for (int i = 0; i < length; i++) {
-            ret[i] = baseToIndex(observations[i]);
-        }
-
-        return ret;
-    }
-
-
     /**
      * gibt den Zustand zurueck, in dem sich das HMM an uebergebenem index in uebergebener Sequenz befindet
      * oder ein Leerzeichen, falls sich das Modell an der Stelle im Insert-Zustand befindet, aber kein Zeichen in der Sequenz vorhanden ist.
@@ -544,7 +522,7 @@ public class ProfilHMM {
      * @param index      position Sequenz
      * @return Zustand
      */
-    private static char getState(String seq, boolean[] matchState, int index) {
+    private static char getState(final String seq, final boolean[] matchState, final int index) {
 
         if (index >= seq.length())
             return STATE_MATCH; // ende
@@ -565,38 +543,33 @@ public class ProfilHMM {
         return STATE_MATCH;
     }
 
-    private static int transitionToIndex(char start, char end) {
-        return transitionToIndex(TRANSITIONS, start, end);
-
+    /**
+     * mappt Beaobachtung-Folge auf entsprechende Index-Folge
+     *
+     * @param observations Beobachtungs-Folge
+     * @return entsprechende Index-Folge
+     */
+    private static int[] observationsToIndices(final char[] observations) {
+        return HMM.charsToIndices(BASES, observations);
     }
 
-    private static int endTransitionToIndex(char start, char end) {
-        return transitionToIndex(END_TRANSITIONS, start, end);
+    /**
+     * mappt Beaobachtung auf entsprechenden Index
+     *
+     * @param observation Beobachtungs
+     * @return entsprechender Index
+     */
+    private static int observationToIndex(final char observation) {
+        return HMM.charToIndex(BASES, observation);
     }
 
-    private static int transitionToIndex(Trans[] array, char start, char end) {
-        for (int i = 0, arrayLength = array.length; i < arrayLength; i++) {
-            Trans trans = array[i];
-            if (trans.equals(start, end))
-                return i;
-        }
-        throw new IllegalArgumentException("Transition " + start + "" + end + " not found");
-    }
-
-
-    private static int baseToIndex(char base) {
-        return charToIndex(BASES, base);
-    }
-
-    private static int stateToIndex(char state) {
-        return charToIndex(STATES, state);
-    }
-
-    private static int charToIndex(char[] array, char c) {
-        for (int i = 0, basesLength = array.length; i < basesLength; i++) {
-            if (array[i] == c)
-                return i;
-        }
-        throw new IllegalArgumentException("Character " + c + " not found");
+    /**
+     * mappt Zustand auf entsprechenden Index
+     *
+     * @param state Zustand
+     * @return entsprechender Index
+     */
+    private static int stateToIndex(final char state) {
+        return HMM.charToIndex(STATES, state);
     }
 }

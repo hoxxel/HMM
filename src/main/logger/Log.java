@@ -13,6 +13,11 @@ public class Log {
 
     public synchronized static void e(String text) {
         if (printError)
+            System.err.print(time() + text);
+    }
+
+    public synchronized static void eLine(String text) {
+        if (printError)
             System.err.println(time() + text);
     }
 
