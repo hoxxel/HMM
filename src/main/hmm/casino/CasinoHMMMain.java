@@ -84,7 +84,13 @@ public class CasinoHMMMain {
 
         Log.iLine("Generated Viterbi Path: ");
 
-        char[] statePath = model.viterbi(observations);
+        char[] statePath = null;
+        try {
+            statePath = model.viterbi(observations);
+        } catch (IllegalArgumentException e) {
+            Log.eLine("ERROR: Viterbi Casino failed! " + e.getMessage());
+            System.exit(1);
+        }
         Log.iLine(String.valueOf(statePath));
 
         boolean equal = Arrays.equals(statePath, inSeqViterbi.toCharArray());

@@ -61,8 +61,9 @@ public class CasinoHMM {
      *
      * @param observations Beobachtungsfolge
      * @return Zustands-Pfad
+     * @throws IllegalArgumentException falls Beobachtung nicht im Feld gefunden wird
      */
-    public char[] viterbi(final char[] observations) {
+    public char[] viterbi(final char[] observations) throws IllegalArgumentException {
 
         // init
         int[] observationIndices = observationsToIndices(observations);

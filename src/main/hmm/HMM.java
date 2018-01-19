@@ -45,8 +45,9 @@ public class HMM {
      * @param space        Feld aller Beobachtungen
      * @param observations Beobachtungs-Folge
      * @return entsprechende Index-Folge
+     * @throws IllegalArgumentException falls Beobachtung nicht im Feld gefunden wird
      */
-    public static int[] charsToIndices(final char[] space, final char[] observations) {
+    public static int[] charsToIndices(final char[] space, final char[] observations) throws IllegalArgumentException {
         int length = observations.length;
         int[] ret = new int[length];
 
@@ -62,8 +63,9 @@ public class HMM {
      * @param space       Feld aller Beobachtungen
      * @param observation Beobachtung
      * @return entsprechender Index
+     * @throws IllegalArgumentException falls Beobachtung nicht im Feld gefunden wird
      */
-    public static int charToIndex(final char[] space, final char observation) {
+    public static int charToIndex(final char[] space, final char observation) throws IllegalArgumentException {
         for (int i = 0, basesLength = space.length; i < basesLength; i++) {
             if (space[i] == observation)
                 return i;

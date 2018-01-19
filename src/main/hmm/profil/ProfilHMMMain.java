@@ -34,7 +34,13 @@ public class ProfilHMMMain {
 
         List<Sequence> sequencesTrain = readFile(paramFileTrain.getValue());
 
-        ProfilHMM model = new ProfilHMM(sequencesTrain);
+        ProfilHMM model = null;
+        try {
+            model = new ProfilHMM(sequencesTrain, false);
+        } catch (IllegalArgumentException e) {
+            Log.eLine("ERROR: Building ProfilHMM failed! " + e.getMessage());
+            System.exit(1);
+        }
 
         Log.iLine();
 
@@ -43,7 +49,14 @@ public class ProfilHMMMain {
         for (int i = 0; i < sequencesTest.size(); i++) {
 
             char[] observ = sequencesTest.get(i).getSequence().toCharArray();
-            char[] statePath = model.viterbi(observ);
+
+            char[] statePath = null;
+            try {
+                statePath = model.viterbi(observ);
+            } catch (IllegalArgumentException e) {
+                Log.eLine("ERROR: Viterbi ProfilHMM failed! " + e.getMessage());
+                System.exit(1);
+            }
 
             Log.iLine(String.valueOf(observ));
             Log.iLine(String.valueOf(statePath));
