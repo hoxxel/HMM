@@ -17,11 +17,14 @@ public class FastaParser {
      *
      * @param filePath Dateipfad
      * @return Liste mit den geparseten {@link Sequence}
-     * @throws FileNotFoundException falls Dateipfad ungueltig
-     * @throws IOException           falls beim einlesen Fehler auftritt
-     * @throws FastaParserException  falls der Inhalt der Datei nicht dem fasta Format entspricht
+     * @throws FileNotFoundException    falls Dateipfad ungueltig
+     * @throws IOException              falls beim einlesen Fehler auftritt
+     * @throws FastaParserException     falls der Inhalt der Datei nicht dem fasta Format entspricht
+     * @throws IllegalArgumentException falls uebergebener Dateipfad == null
      */
-    public static List<Sequence> parseFile(String filePath) throws FileNotFoundException, IOException, FastaParserException {
+    public static List<Sequence> parseFile(String filePath) throws IllegalArgumentException, FileNotFoundException, IOException, FastaParserException {
+        if (filePath == null)
+            throw new IllegalArgumentException("filePath is null");
 
         File file = new File(filePath);
 

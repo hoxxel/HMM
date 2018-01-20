@@ -39,21 +39,20 @@ public class ProfilHMM {
     private static final char[] STATES = {STATE_MATCH, STATE_INSERT, STATE_DELETE};
     private static final int STATE_COUNT = STATES.length;
 
-    private final boolean useLog;
+    private static final boolean useLogSpace = false;
+
     private double[][] emissionProbMatch;
     private double[][] emissionProbInsert;
     private double[][][] transitionProb;
     private int lengthModel; // interpreting beginning-state als match-state
 
-    public ProfilHMM(boolean useLog) {
-        this.useLog = useLog;
+    public ProfilHMM() {
     }
 
-    public ProfilHMM(List<Sequence> sequencesTrain, boolean useLog) throws IllegalArgumentException {
-        this.useLog = useLog;
+    public ProfilHMM(List<Sequence> sequencesTrain) throws IllegalArgumentException {
 
         buildModel(sequencesTrain);
-        if (useLog) {
+        if (useLogSpace) {
             // convert into logspace (can be done before Viterbi-Algo is running)
             HMM.convertToLogspace(transitionProb);
             HMM.convertToLogspace(emissionProbMatch);
@@ -63,13 +62,37 @@ public class ProfilHMM {
 
     /**
      * @param sequencesTrain
-     * @throws IllegalArgumentException falls Beobachtung nicht im Feld gefunden wird
+     * @throws IllegalArgumentException falls uebergebenes Feld == null
+     *                                  oder das uebergebene Feld leer ist
+     *                                  oder Sequenzen unterschiedlich lang
+     *                                  oder Beobachtung nicht im Feld gefunden wird
      */
     public synchronized void buildModel(List<Sequence> sequencesTrain) throws IllegalArgumentException {
         Log.iLine("Building ProfilHMM -----------------------------");
+        // checks
+        if (sequencesTrain == null)
+            throw new IllegalArgumentException("sequencesTrain is null");
+
+
+        int seqenceCount = sequencesTrain.size();
+        if (seqenceCount <= 0) {
+            throw new IllegalArgumentException("sequencesTrain is empty");
+        }
+
+        int length = sequencesTrain.get(0).getSequence().length();
+        for (Sequence s : sequencesTrain) {
+            int sLength = s.getSequence().length();
+            if (sLength != length) {
+                throw new IllegalArgumentException("Sequence '" + s.getDescription()
+                        + "' has different lenght (" + sLength + ") then the first Sequence (" + length + ")");
+            }
+        }
+
+        Log.iLine("Sequence count = " + seqenceCount);
+        Log.iLine("Sequence length = " + length);
 
         // find Match or Insertion-States and Model length --------------------------------------------------------
-        int length = sequencesTrain.get(0).getSequence().length();
+        // also count nucleotides and gaps ------------------------------------------------------------------------
         int[] gapCounts = new int[length];
         int[][] baseCounts = new int[length][BASES.length];
 
@@ -88,17 +111,37 @@ public class ProfilHMM {
         lengthModel = 1;
 
         {
-            int countThres = (int) (sequencesTrain.size() * (1d - THRESHOLD_MATCHSTATE));
+            int countThreshold = (int) (seqenceCount * (1d - THRESHOLD_MATCHSTATE));
             for (int i = 0; i < gapCounts.length; i++) {
-                if (gapCounts[i] <= countThres) {
+                if (gapCounts[i] <= countThreshold) {
                     lengthModel++;
                     matchState[i] = true;
                 }
             }
         }
 
-        Log.iLine("Sequence length = " + length);
-        Log.iLine("Model length = " + lengthModel + " (interpreting beginning-state als match-state)");
+        Log.iLine("Model length = " + lengthModel + " (interpreting start-state als match-state)");
+
+
+        // debug output gaps and nucleotide counts
+        Log.dLine("Gap-Counts (m=Match-State \u001B[32mI\u001B[0m=Insert-State):");
+        for (int i = 0; i < length; i++) {
+            Log.d(matchState[i] ? "   m " : "\u001B[32m   I \u001B[0m");
+        }
+        Log.dLine();
+
+        for (int i = 0; i < gapCounts.length; i++) {
+            Log.d(String.format("%4d ", gapCounts[i]));
+        }
+        Log.dLine();
+        Log.dLine("Nucleotide-Counts: ");
+        for (int i = 0; i < baseCounts[0].length; i++) {
+            for (int j = 0; j < baseCounts.length; j++) {
+
+                Log.d(String.format("%4d ", baseCounts[j][i]));
+            }
+            Log.dLine();
+        }
 
 
         // calc Emission Prob ---------------------------------------------------------------------------
@@ -165,26 +208,7 @@ public class ProfilHMM {
         }
 
 
-        // output
-        Log.dLine("Gap-Counts (m=Match-State \u001B[32mI\u001B[0m=Insert-State):");
-        for (int i = 0; i < length; i++) {
-            Log.d(matchState[i] ? "   m " : "\u001B[32m   I \u001B[0m");
-        }
-        Log.dLine();
-
-        for (int i = 0; i < gapCounts.length; i++) {
-            Log.d(String.format("%4d ", gapCounts[i]));
-        }
-        Log.dLine();
-        Log.dLine("Nucleotide-Counts: ");
-        for (int i = 0; i < baseCounts[0].length; i++) {
-            for (int j = 0; j < baseCounts.length; j++) {
-
-                Log.d(String.format("%4d ", baseCounts[j][i]));
-            }
-            Log.dLine();
-        }
-
+        // debug output Emission-Prob
         Log.dLine();
         Log.dLine("Emission Prob Match: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")");
         for (int i = 0; i < emissionProbMatch[0].length; i++) {
@@ -218,8 +242,7 @@ public class ProfilHMM {
             Log.d(matchState[i] ? "  m" : "\u001B[32m  I\u001B[0m");
         }
         Log.dLine();
-        for (int i1 = 0; i1 < sequencesTrain.size(); i1++) {
-            Sequence sequence = sequencesTrain.get(i1);
+        for (Sequence sequence : sequencesTrain) {
             String sequenceString = sequence.getSequence();
 
             // output sequence
@@ -322,10 +345,14 @@ public class ProfilHMM {
      *
      * @param observations Beobachtungsfolge
      * @return Zustands-Pfad
-     * @throws IllegalArgumentException falls Beobachtung nicht im Feld gefunden wird
+     * @throws IllegalArgumentException falls uebergebenes Feld == null
+     *                                  oder Beobachtung nicht im Feld gefunden wird
      */
     public synchronized char[] viterbi(final char[] observations) throws IllegalArgumentException {
         Log.iLine("Viterbi ProfilHMM -----------------------------");
+
+        if (observations == null)
+            throw new IllegalArgumentException("observations is null");
 
         // init
         int[] observationIndices = observationsToIndices(observations);
@@ -337,10 +364,10 @@ public class ProfilHMM {
 
         // init
         {
-            double initValue = (useLog ? Double.NEGATIVE_INFINITY : 0d);
+            double initValue = (useLogSpace ? Double.NEGATIVE_INFINITY : 0d);
 
             int stateIndex = stateToIndex(STATE_MATCH);
-            viterbiVar[stateIndex][0][0] = (useLog ? 0d : 1d);
+            viterbiVar[stateIndex][0][0] = (useLogSpace ? 0d : 1d);
             viterbiArg[stateIndex][0][0] = -1;
             for (int j = 1; j < lengthModel; j++) {
                 viterbiVar[stateIndex][0][j] = initValue;
@@ -359,21 +386,6 @@ public class ProfilHMM {
                 viterbiVar[stateIndex][i][0] = initValue;
             }
         }
-
-
-        Log.iLine("ViterbiVar Init: "); //TODO remove
-        // [STATE_COUNT][length][lengthModel]
-        for (int j = 0; j < lengthModel; j++) {
-            for (int k = 0; k < STATES.length; k++) {
-                Log.i((k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " "));
-                for (int i = 0; i < length; i++) {
-                    Log.i(String.format("%.4s ", String.format("%f", viterbiVar[k][i][j])));
-                }
-                Log.iLine();
-            }
-            Log.iLine();
-        }
-        Log.iLine();
 
         // iterate observations indices
         for (int i = 0; i < length; i++) {
@@ -405,7 +417,7 @@ public class ProfilHMM {
 
                         for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                            double prob = operation(viterbiVar[stateIndex][iShift][jShift], transitionProb[stateIndex][s][jShift]); // log-space // FIXME
+                            double prob = operation(viterbiVar[stateIndex][iShift][jShift], transitionProb[stateIndex][s][jShift]); // log-space
                             if (prob > maxProb) {
                                 maxProb = prob;
                                 maxArg = stateIndex;
@@ -413,7 +425,7 @@ public class ProfilHMM {
                         }
 
                         // 0 is neutral element of addition (log-space). 1 is neutral element of mult
-                        double emissionProb = useLog ? 0d : 1d;
+                        double emissionProb = useLogSpace ? 0d : 1d;
 
                         if (emissionProbMatrix != null) {
                             emissionProb = emissionProbMatrix[j][observationIndices[i - 1]];
@@ -425,31 +437,32 @@ public class ProfilHMM {
             }
         }
 
-        Log.iLine("ViterbiVar: "); // TODO change to debug
+        // debug output viterbi 3d-matrix
+        Log.dLine("ViterbiVar: ");
         // [STATE_COUNT][length][lengthModel]
         for (int j = 0; j < lengthModel; j++) {
             for (int k = 0; k < STATES.length; k++) {
-                Log.i((k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " "));
+                Log.d("\u001B[37m" + (k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " ") + "\u001B[0m");
                 for (int i = 0; i < length; i++) {
-                    Log.i(String.format("%.5s ", String.format("%f", viterbiVar[k][i][j])));
+                    Log.d(String.format("%.5s ", String.format("%f", viterbiVar[k][i][j])));
                 }
-                Log.iLine();
+                Log.dLine();
             }
-            Log.iLine();
+            Log.dLine();
         }
 
-        Log.iLine("ViterbiArg: "); // TODO change to debug
+        Log.dLine("ViterbiArg: ");
         // [STATE_COUNT][length][lengthModel]
         for (int j = 0; j < lengthModel; j++) {
             for (int k = 0; k < STATES.length; k++) {
-                Log.i("\u001B[37m" + (k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " ") + "\u001B[0m");
+                Log.d("\u001B[37m" + (k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " ") + "\u001B[0m");
                 for (int i = 0; i < length; i++) {
                     int a = viterbiArg[k][i][j];
-                    Log.i(String.format("%5s ", (a >= 0 ? String.valueOf(STATES[a]) : a)));
+                    Log.d(String.format("%5s ", (a >= 0 ? String.valueOf(STATES[a]) : a)));
                 }
-                Log.iLine();
+                Log.dLine();
             }
-            Log.iLine();
+            Log.dLine();
         }
 
         // BACKTRACE -------------------------------------------------------------------------------------
@@ -501,16 +514,18 @@ public class ProfilHMM {
         }
 
 
+        // debug output stateIndicesPath
+        Log.dLine("stateIndicesPath");
         for (int i = 0; i < stateIndexPath.length; i++) {
             Log.d(stateIndexPath[i]);
         }
-        Log.dLine();
+        Log.dLine('\n');
 
         return statePath;
     }
 
     private double operation(double a, double b) {
-        return useLog ? a + b : a * b;
+        return useLogSpace ? a + b : a * b;
     }
 
     /**

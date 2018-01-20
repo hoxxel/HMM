@@ -1,9 +1,6 @@
 package main.hmm.profil;
 
-import main.argparser.ArgumentParser;
-import main.argparser.ArgumentParserException;
-import main.argparser.ParameterSet;
-import main.argparser.Setting;
+import main.argparser.*;
 import main.fastaparser.FastaParser;
 import main.fastaparser.FastaParserException;
 import main.fastaparser.Sequence;
@@ -21,8 +18,10 @@ public class ProfilHMMMain {
         ParameterSet parameterSet = new ParameterSet();
         Setting paramFileTrain = new Setting("filetrain", true);
         Setting paramFileTest = new Setting("filetest", true);
+        Flag paramDebug = new Flag("debug", false);
         parameterSet.addSetting(paramFileTrain);
         parameterSet.addSetting(paramFileTest);
+        parameterSet.addFlag(paramDebug);
 
         try {
             ArgumentParser parser = new ArgumentParser(parameterSet);
@@ -32,11 +31,14 @@ public class ProfilHMMMain {
             System.exit(1);
         }
 
+        if (paramDebug.isSet())
+            Log.setPrintDebug(true);
+
         List<Sequence> sequencesTrain = readFile(paramFileTrain.getValue());
 
         ProfilHMM model = null;
         try {
-            model = new ProfilHMM(sequencesTrain, true);
+            model = new ProfilHMM(sequencesTrain);
         } catch (IllegalArgumentException e) {
             Log.eLine("ERROR: Building ProfilHMM failed! " + e.getMessage());
             System.exit(1);
