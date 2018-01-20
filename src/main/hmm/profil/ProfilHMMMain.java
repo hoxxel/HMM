@@ -1,9 +1,6 @@
 package main.hmm.profil;
 
-import main.argparser.ArgumentParser;
-import main.argparser.ArgumentParserException;
-import main.argparser.ParameterSet;
-import main.argparser.Setting;
+import main.argparser.*;
 import main.fastaparser.FastaParser;
 import main.fastaparser.FastaParserException;
 import main.fastaparser.Sequence;
@@ -13,46 +10,73 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Ausfuehrbare Klasse, die den Dateipfad der Traings-Sequencen als Parameter (-filetrain <Path>)
+ * sowie der Test-Sequencen als Parameter (-filetest <Path>) uebergeben bekommen muss.
+ * <p>
+ * Erstellt anhand der Trainings-Sequencen ein {@link ProfilHMM}.
+ * Anschliessend wird mittels des Viterbi-Algorithmus fuer jede Test-Sequenz ein Zustands-Pfad ermittelt.
+ *
+ * @author Soeren Metje
+ */
 public class ProfilHMMMain {
 
-
+    /**
+     * ausfuehrbare Methode
+     *
+     * @param args Argumente
+     */
     public static void main(String[] args) {
         // set up Parameter
         ParameterSet parameterSet = new ParameterSet();
-        Setting filePathTrain = new Setting("filetrain", true);
-        Setting filePathTestF = new Setting("filetestf", true); //TODO req
-        Setting filePathTestS = new Setting("filetests", false); // TODO req
-        parameterSet.addSetting(filePathTrain);
-        parameterSet.addSetting(filePathTestF);
-        parameterSet.addSetting(filePathTestS);
+        Setting paramFileTrain = new Setting("filetrain", true);
+        Setting paramFileTest = new Setting("filetest", true);
+        Flag paramDebug = new Flag("debug", false);
+        parameterSet.addSetting(paramFileTrain);
+        parameterSet.addSetting(paramFileTest);
+        parameterSet.addFlag(paramDebug);
 
         try {
             ArgumentParser parser = new ArgumentParser(parameterSet);
             parser.parseArgs(args);
         } catch (ArgumentParserException e) { // if parameter is missing or not intended
-            Log.e(e.getMessage());
+            Log.eLine(e.getMessage());
             System.exit(1);
         }
 
-        List<Sequence> sequencesTrain = readFile(filePathTrain.getValue());
+        if (paramDebug.isSet())
+            Log.setPrintDebug(true);
 
-        ProfilHMM model = new ProfilHMM(sequencesTrain);
+        List<Sequence> sequencesTrain = readFile(paramFileTrain.getValue());
+
+        ProfilHMM model = null;
+        try {
+            model = new ProfilHMM(sequencesTrain);
+        } catch (IllegalArgumentException e) {
+            Log.eLine("ERROR: Building ProfilHMM failed! " + e.getMessage());
+            System.exit(1);
+        }
 
         Log.iLine();
-        List<Sequence> sequencesTestF = null;
-        List<Sequence> sequencesTestS;
 
-        if (filePathTestF.isSet()) {
-            sequencesTestF = readFile(filePathTestF.getValue());
-        }
-        if (filePathTestS.isSet()) {
-            sequencesTestS = readFile(filePathTestS.getValue());
-        }
+        List<Sequence> sequencesTest = readFile(paramFileTest.getValue());
 
-        Log.iLine("Generated Viterbi Path: ");
-        char[] observ = sequencesTestF.get(0).getSequence().toCharArray();
-        char[] statePath = model.viterbi(observ);
-        Log.iLine(String.valueOf(statePath));
+        for (int i = 0; i < sequencesTest.size(); i++) {
+
+            char[] observ = sequencesTest.get(i).getSequence().toCharArray();
+
+            char[] statePath = null;
+            try {
+                statePath = model.viterbi(observ);
+            } catch (IllegalArgumentException e) {
+                Log.eLine("ERROR: Viterbi ProfilHMM failed! " + e.getMessage());
+                System.exit(1);
+            }
+
+            Log.iLine(String.valueOf(observ));
+            Log.iLine(String.valueOf(statePath));
+            Log.iLine();
+        }
     }
 
     private static List<Sequence> readFile(String filePath) {
@@ -63,13 +87,14 @@ public class ProfilHMMMain {
         try {
             ret = FastaParser.parseFile(filePath);
         } catch (FileNotFoundException e) {
-            Log.e("ERROR: file " + filePath + " not found");
+            Log.eLine("ERROR: file " + filePath + " not found");
             System.exit(1);
         } catch (IOException e) {
-            Log.e("ERROR: while reading file " + filePath);
+            Log.eLine("ERROR: while reading file " + filePath);
             System.exit(1);
         } catch (FastaParserException e) {
-            Log.e("ERROR: while parsing file " + filePath + ": " + e.getMessage());
+            Log.eLine("ERROR: while parsing file " + filePath + ": " + e.getMessage());
+            System.exit(1);
         }
 
         Log.iLine("successfully finished reading file");

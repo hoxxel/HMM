@@ -1,5 +1,7 @@
 package main.hmm.casino;
 
+import main.hmm.HMM;
+
 /**
  * Aufgabe: Implementieren Sie den Viterbi-Algorithmus fuer das HMM zu dem Beispiel des
  * unehrlichen Casinos, wie in der Vorlesung vorgestellt (siehe auch im Buch von
@@ -7,7 +9,8 @@ package main.hmm.casino;
  * <p>
  * Anhand  https://en.wikipedia.org/wiki/Viterbi_algorithm  implementiert.
  * <p>
- * Enthaelt die Implementation des Viterbi-Algorithmus, der aus einer uebergebenen Sequenz einen Zustands-Pfad generiert. F = Fair, L = Loaded.
+ * Enthaelt die Implementation des Viterbi-Algorithmus.
+ * Dieser generiert aus einer uebergebenen Sequenz einen Zustands-Pfad. F = Fair, L = Loaded.
  *
  * @author Soren Metje
  */
@@ -37,6 +40,7 @@ public class CasinoHMM {
      * Uebergangswahrscheinlichen zwischen den Zustaenden
      */
     private final double[][] TRANSITION_MATRIX = new double[][]{{.95d, .05d}, {.1d, .9d}};
+
     /**
      * Beobachtungswahrscheinlichketen der Ereignisse in den jeweiligen Zustaenden
      */
@@ -48,40 +52,23 @@ public class CasinoHMM {
      */
     public CasinoHMM() {
         // convert into logspace (can be done before Viterbi-Algo is running)
-        convertToLogspace(INIT_PROBABILITIES);
-        convertToLogspace(TRANSITION_MATRIX);
-        convertToLogspace(EMISSION_MATRIX);
+        HMM.convertToLogspace(INIT_PROBABILITIES);
+        HMM.convertToLogspace(TRANSITION_MATRIX);
+        HMM.convertToLogspace(EMISSION_MATRIX);
     }
 
-    /**
-     * Konvertiert die uebergebene Matrix als Nebeneffekt in den logarithmischen Raum
-     *
-     * @param matrix Matrix
-     */
-    public static void convertToLogspace(double[][] matrix) {
-        for (double[] vector : matrix) {
-            convertToLogspace(vector);
-        }
-    }
 
     /**
-     * Konvertiert den uebergebenen Vektor als Nebeneffekt in den logarithmischen Raum
-     *
-     * @param vector Vektor
-     */
-    public static void convertToLogspace(double[] vector) {
-        for (int j = 0; j < vector.length; j++) {
-            vector[j] = Math.log(vector[j]);
-        }
-    }
-
-    /**
-     * Implementation des Viterbi-Algorithmus für den logarithmischen Raum
+     * Implementation des Viterbi-Algorithmus fuer den logarithmischen Raum
      *
      * @param observations Beobachtungsfolge
      * @return Zustands-Pfad
+     * @throws IllegalArgumentException falls uebergebenes Feld == null oder
+     *                                  Beobachtung nicht im Feld gefunden wird
      */
-    public char[] viterbi(final char[] observations) {
+    public char[] viterbi(final char[] observations) throws IllegalArgumentException {
+        if (observations == null)
+            throw new IllegalArgumentException("observations is null");
 
         // init
         int[] observationIndices = observationsToIndices(observations);
@@ -158,14 +145,7 @@ public class CasinoHMM {
      * @return entsprechende Index-Folge
      */
     private static int[] observationsToIndices(final char[] observations) {
-        int length = observations.length;
-        int[] ret = new int[length];
-
-        for (int i = 0; i < length; i++) {
-            ret[i] = obesrvationToIndex(observations[i]);
-        }
-
-        return ret;
+        return HMM.charsToIndices(OBSERVATION_SPACE, observations);
     }
 
     /**
@@ -175,11 +155,6 @@ public class CasinoHMM {
      * @return entsprechender Index
      */
     private static int obesrvationToIndex(final char observation) {
-        for (int i = 0, observation_spaceLength = OBSERVATION_SPACE.length; i < observation_spaceLength; i++) {
-            char c = OBSERVATION_SPACE[i];
-            if (c == observation)
-                return i;
-        }
-        return -1;
+        return HMM.charToIndex(OBSERVATION_SPACE, observation);
     }
 }
