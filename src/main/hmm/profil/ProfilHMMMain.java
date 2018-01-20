@@ -36,7 +36,7 @@ public class ProfilHMMMain {
 
         ProfilHMM model = null;
         try {
-            model = new ProfilHMM(sequencesTrain, false);
+            model = new ProfilHMM(sequencesTrain, true);
         } catch (IllegalArgumentException e) {
             Log.eLine("ERROR: Building ProfilHMM failed! " + e.getMessage());
             System.exit(1);

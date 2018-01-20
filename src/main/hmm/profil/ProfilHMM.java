@@ -341,6 +341,7 @@ public class ProfilHMM {
 
             int stateIndex = stateToIndex(STATE_MATCH);
             viterbiVar[stateIndex][0][0] = (useLog ? 0d : 1d);
+            viterbiArg[stateIndex][0][0] = -1;
             for (int j = 1; j < lengthModel; j++) {
                 viterbiVar[stateIndex][0][j] = initValue;
             }
@@ -374,28 +375,28 @@ public class ProfilHMM {
         }
         Log.iLine();
 
-        // iterate states indices
-        for (int s = 0; s < STATE_COUNT; s++) {
-            char state = STATES[s];
+        // iterate observations indices
+        for (int i = 1; i < length; i++) {
+            // iterate model indices
+            for (int j = 1; j < lengthModel; j++) {
+                // iterate states indices
+                for (int s = 0; s < STATE_COUNT; s++) { // order of iteration-loops is relevant!
+                    char state = STATES[s];
 
-            int shiftI = 0, shiftJ = 0;
-            double[][] emissionProbMatrix = null;
-            if (state == STATE_MATCH) {
-                shiftI = 1;
-                shiftJ = 1;
-                emissionProbMatrix = emissionProbMatch;
-            } else if (state == STATE_INSERT) {
-                shiftI = 1;
-                emissionProbMatrix = emissionProbInsert;
-            } else if (state == STATE_DELETE) {
-                shiftJ = 1;
-            } else
-                throw new RuntimeException("no valid state");
+                    int shiftI = 0, shiftJ = 0;
+                    double[][] emissionProbMatrix = null;
+                    if (state == STATE_MATCH) {
+                        shiftI = 1;
+                        shiftJ = 1;
+                        emissionProbMatrix = emissionProbMatch;
+                    } else if (state == STATE_INSERT) {
+                        shiftI = 1;
+                        emissionProbMatrix = emissionProbInsert;
+                    } else if (state == STATE_DELETE) {
+                        shiftJ = 1;
+                    } else
+                        throw new RuntimeException("no valid state");
 
-            // iterate observations indices
-            for (int i = 1; i < length; i++) {
-                // iterate model indices
-                for (int j = 1; j < lengthModel; j++) {
 
                     //find max
                     double maxProb = Double.NEGATIVE_INFINITY;
@@ -403,7 +404,7 @@ public class ProfilHMM {
 
                     for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                        double prob = operation(viterbiVar[stateIndex][i - shiftI][j - shiftJ], transitionProb[stateIndex][s][j - shiftJ]); // log-space
+                        double prob = operation(viterbiVar[stateIndex][i - shiftI][j - shiftJ], transitionProb[stateIndex][s][j - shiftJ]); // log-space // FIXME
                         if (prob > maxProb) {
                             maxProb = prob;
                             maxArg = stateIndex;
@@ -435,41 +436,62 @@ public class ProfilHMM {
             Log.iLine();
         }
 
-        // BACKTRACE -------------------------------------------------------------------------------------
-        // backtrace init
-        int zLast = -1;
-        {
-            double probLast = Double.NEGATIVE_INFINITY;
-            for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
-
-                double prob = viterbiVar[stateIndex][length - 1][lengthModel - 1];
-                if (prob > probLast) {
-                    zLast = stateIndex;
-                    probLast = prob;
+        Log.iLine("ViterbiArg: "); // TODO change to debug
+        // [STATE_COUNT][length][lengthModel]
+        for (int j = 0; j < lengthModel; j++) {
+            for (int k = 0; k < STATES.length; k++) {
+                Log.i((k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " "));
+                for (int i = 0; i < length; i++) {
+                    Log.i(String.format("%5d ", viterbiArg[k][i][j]));
                 }
+                Log.iLine();
             }
+            Log.iLine();
         }
 
-        int[] stateIndexPath = new int[length]; // z
-        char[] statePath = new char[length]; // x
+        // BACKTRACE -------------------------------------------------------------------------------------
+        // backtrace init
 
-        stateIndexPath[length - 1] = zLast;
-        statePath[length - 1] = STATES[zLast];
-
-        // backtrace iterate // FIXME
+        int[] stateIndexPath = new int[length - 1]; // z
+        char[] statePath = new char[length - 1]; // x
         {
             int i = length - 1, j = lengthModel - 1;
-            while (i > 0 && j >= 0) {
-                int stateIndex = viterbiArg[stateIndexPath[i]][i][j];
+            int zEnd = -1;
+            {
+                double probLast = Double.NEGATIVE_INFINITY;
+                for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
+
+                    double prob = viterbiVar[stateIndex][i][j];
+                    if (prob > probLast) {
+                        zEnd = stateIndex;
+                        probLast = prob;
+                    }
+                }
+            }
+
+
+            System.out.println("printrec:");
+
+            printRec(viterbiArg[zEnd][i][j], STATES[zEnd], i, j);
+            System.out.println();
+            System.out.println();
+
+            int cursor = stateIndexPath.length - 1;
+
+            stateIndexPath[cursor] = zEnd;
+            statePath[cursor] = STATES[zEnd];
+            cursor--;
+
+
+            // backtrace iterate // FIXME
+
+            while (cursor >= 0) {
+                int stateIndex = viterbiArg[zEnd][i][j];
                 char state = STATES[stateIndex];
 
-                if (i == 1) {
-                    stateIndexPath[i - 1] = -1;
-                    statePath[i - 1] = 'A';
-                } else {
-                    stateIndexPath[i - 1] = stateIndex;
-                    statePath[i - 1] = state;
-                }
+                stateIndexPath[cursor] = stateIndex;
+                statePath[cursor] = state;
+
                 if (state == STATE_MATCH) {
                     i--;
                     j--;
@@ -478,6 +500,7 @@ public class ProfilHMM {
                 } else if (state == STATE_DELETE) {
                     j--;
                 }
+                cursor--;
             }
         }
 
@@ -497,6 +520,42 @@ public class ProfilHMM {
         Log.dLine();
 
         return statePath;
+    }
+
+    private void printRec(int ptrM, char ptr, int i, int j) {
+        if (i == 0 || j == 0)
+            return;
+        if (ptr == STATE_MATCH) {
+
+            if (ptrM == 0) {
+                printRec(ptrM, STATE_MATCH, i - 1, j - 1);
+            } else if (ptrM == 1) {
+                printRec(ptrM, STATE_INSERT, i - 1, j - 1);
+            } else if (ptrM == 2) {
+                printRec(ptrM, STATE_DELETE, i - 1, j - 1);
+            }
+            System.out.print(STATE_MATCH);
+        } else if (ptr == STATE_INSERT) {
+
+            if (ptrM == 0) {
+                printRec(ptrM, STATE_MATCH, i - 1, j);
+            } else if (ptrM == 1) {
+                printRec(ptrM, STATE_INSERT, i - 1, j);
+            } else if (ptrM == 2) {
+                printRec(ptrM, STATE_DELETE, i - 1, j);
+            }
+            System.out.print(STATE_INSERT);
+        } else if (ptr == STATE_DELETE) {
+
+            if (ptrM == 0) {
+                printRec(ptrM, STATE_MATCH, i, j - 1);
+            } else if (ptrM == 1) {
+                printRec(ptrM, STATE_INSERT, i, j - 1);
+            } else if (ptrM == 2) {
+                printRec(ptrM, STATE_DELETE, i, j - 1);
+            }
+            System.out.print(STATE_DELETE);
+        }
     }
 
     private double operation(double a, double b) {
