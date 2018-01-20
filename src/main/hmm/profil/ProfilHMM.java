@@ -6,8 +6,27 @@ import main.logger.Log;
 
 import java.util.List;
 
+/**
+ * <p><p>Aufgabe: </p>
+ * Zum Einlesen des multiplen Sequenzalignments (MSA) der ribosomalen RNA
+ * (rRNA) Trainingsequenzen (Datei: LSU train.fasta) koennen Sie sich an dem
+ * C-Beispiel (im gleichen Daten Verzeichnis) orientieren oder dieses direkt in ihrem Programm verwenden.
+ * Beim Bestimmen der Modellstruktur (Anzahl der Match-Zustaende) wenden Sie
+ * die in der Vorlesung besprochene 50% Regel an: wenn in einer Spalte des MSA
+ * weniger als 50% der Sequenzen Gaps aufweisen, dann wird diese Spalte einem
+ * Match-Zustand zugeordnet. Danach koennen Sie die Emissionswahrscheinlichkeiten und Uebergangswahrscheinlichkeiten schaetzen.
+ * Verwenden Sie zum Schaetzen aller Wahrscheinlichkeiten einen globalen Pseudocount-Parameter r = 1 (Laplace-Regel).
+ * Lassen sie sich fuer die Match-Zustaende der Trainingssequenzen die Emissionswahrscheinlichkeiten ausgeben.
+ * </p>
+ * Anhand verschiedener Quellen implementiert.
+ * <p>
+ * Enthaelt Methode buildModel, die aus uebergebenen Trainings-Sequenzen ein ProfilHMM erstellt.
+ * Enthaelt die Implementation des Viterbi-Algorithmus.
+ * Dieser generiert aus einer uebergebenen Sequenz einen Zustands-Pfad. M = Match, D = Delete, I = Insert.
+ *
+ * @author Soeren Metje
+ */
 public class ProfilHMM {
-
     /*
     PROFIL HIDDEN MARKOV MODEL
                __              __                __                __                __                                  __                __
@@ -29,26 +48,94 @@ public class ProfilHMM {
 
      */
 
-    public static final int PSEUDO_COUNT_EMISSION = 1;
-    public static final int PSEUDO_COUNT_TRANSITION = 1;
-    public static final double THRESHOLD_MATCHSTATE = .7d; // min amount of nucleotides (no gap) to count column as match-state // TODO .5
+    /**
+     * Pseudo-Count fuer Berechnung der Emissions-Wahrscheinlichkeiten
+     */
+    private static final int PSEUDO_COUNT_EMISSION = 1;
 
+    /**
+     * Pseudo-Count fuer Berechnung der Uebergangs-Wahrscheinlichkeiten
+     */
+    private static final int PSEUDO_COUNT_TRANSITION = 1;
+
+    /**
+     * Anteil and Nukleotiden (also keine gaps), ab dem die Spalte als Match-State gezaehlt wird
+     */
+    private static final double THRESHOLD_MATCHSTATE = .5d; // min amount of nucleotides (no gap) to count column as match-state
+
+    /**
+     * Zeichen fuer Gap
+     */
     private static final char GAP = '-';
+
+    /**
+     * Zeichen fuer Nukleotide
+     */
     private static final char[] BASES = {'A', 'C', 'G', 'U'};
-    private static final char STATE_MATCH = 'M', STATE_INSERT = 'I', STATE_DELETE = 'D', STATE_END = 'E', STATE_IGNORE = ' ';
+
+    /**
+     * Match-Zustand
+     */
+    private static final char STATE_MATCH = 'M';
+
+    /**
+     * Insert-Zustand
+     */
+    private static final char STATE_INSERT = 'I';
+
+    /**
+     * Delete-Zustand
+     */
+    private static final char STATE_DELETE = 'D';
+
+    /**
+     * Zustand, wenn sich Gap in Insert-Spalte befindet
+     */
+    private static final char STATE_IGNORE = ' ';
+
+    /**
+     * Zustaende
+     */
     private static final char[] STATES = {STATE_MATCH, STATE_INSERT, STATE_DELETE};
+
+    /**
+     * Anzahl der Zustaende
+     */
     private static final int STATE_COUNT = STATES.length;
 
+    /**
+     * true = berechne im logarithmischen Raum. false = normal
+     */
     private static final boolean useLogSpace = false;
 
+    /**
+     * Beobachtungswahrscheinlichketen der Nukleotide im Match-Zustand an Position im Modell
+     */
     private double[][] emissionProbMatch;
+
+    /**
+     * Beobachtungswahrscheinlichketen der Nukleotide im Insert-Zustand an Position im Modell
+     */
     private double[][] emissionProbInsert;
+
+    /**
+     * Uebergangswahrscheinlichen zwischen den Zustaenden an Position im Modell
+     */
     private double[][][] transitionProb;
+
+    /**
+     * Laenge des Modells bzw Anzahl der Match-Zustaende im Modell.
+     * Der Start-Zustand wird auch als Match-Zustand interpretiert
+     */
     private int lengthModel; // interpreting beginning-state als match-state
 
-    public ProfilHMM() {
-    }
-
+    /**
+     * Konstruktor. Erstellt Modell und fuehrt die Methode buildModel aus.
+     * Anschliessend wird ggf. in logarithmischen Raum konvertiert
+     *
+     * @param sequencesTrain Trainings-Sequenzen
+     * @throws IllegalArgumentException falls in buildModel ein Fehler auftritt
+     */
     public ProfilHMM(List<Sequence> sequencesTrain) throws IllegalArgumentException {
 
         buildModel(sequencesTrain);
@@ -61,13 +148,17 @@ public class ProfilHMM {
     }
 
     /**
-     * @param sequencesTrain
+     * Extrahiert Daten fuer das ProfilHMM aus Trainings-Sequenzen.
+     * Setzt Laenge des Modells.
+     * Erstellt Felder fuer Beobachtungswahrscheinlichketen und Uebergangswahrscheinlichen zwischen den Zustaenden.
+     *
+     * @param sequencesTrain Trainings-Sequenzen
      * @throws IllegalArgumentException falls uebergebenes Feld == null
      *                                  oder das uebergebene Feld leer ist
      *                                  oder Sequenzen unterschiedlich lang
      *                                  oder Beobachtung nicht im Feld gefunden wird
      */
-    public synchronized void buildModel(List<Sequence> sequencesTrain) throws IllegalArgumentException {
+    private synchronized void buildModel(List<Sequence> sequencesTrain) throws IllegalArgumentException {
         Log.iLine("Building ProfilHMM -----------------------------");
         // checks
         if (sequencesTrain == null)
@@ -302,7 +393,6 @@ public class ProfilHMM {
 
 
         // calc Transition Prob ----------------------------------------------------------------------
-
         transitionProb = new double[STATES.length][STATES.length][lengthModel];
         for (int i = 0; i < lengthModel; i++) {
 
@@ -321,7 +411,6 @@ public class ProfilHMM {
             }
         }
 
-
         // output Transition Prob
         Log.iLine();
         Log.iLine("Transition Prob: (Pseudo-Count = " + PSEUDO_COUNT_TRANSITION + ")");
@@ -339,9 +428,8 @@ public class ProfilHMM {
         }
     }
 
-
     /**
-     * Implementation des Viterbi-Algorithmus für den logarithmischen Raum
+     * Implementation des Viterbi-Algorithmus fuer den logarithmischen Raum
      *
      * @param observations Beobachtungsfolge
      * @return Zustands-Pfad
@@ -493,7 +581,6 @@ public class ProfilHMM {
 
 
             // backtrace iterate
-
             while (cursor >= 0) {
                 int stateIndex = viterbiArg[zEnd][i][j];
                 char state = STATES[stateIndex];
@@ -513,7 +600,6 @@ public class ProfilHMM {
             }
         }
 
-
         // debug output stateIndicesPath
         Log.dLine("stateIndicesPath");
         for (int i = 0; i < stateIndexPath.length; i++) {
@@ -524,6 +610,15 @@ public class ProfilHMM {
         return statePath;
     }
 
+    /**
+     * Rechenoperation zur Berechnung der Verbundwahrscheinlichkeiten.
+     * logarithmischer Raum wird verwendet: Addition.
+     * Ansonsten: Multiplikation
+     *
+     * @param a erstes Element
+     * @param b zweites Element
+     * @return Summe oder Produkt
+     */
     private double operation(double a, double b) {
         return useLogSpace ? a + b : a * b;
     }

@@ -2,22 +2,50 @@ package main.logger;
 
 import java.text.SimpleDateFormat;
 
+/**
+ * simpler Logger
+ *
+ * @author Soeren Metje
+ */
 public class Log {
 
+    /**
+     * Zeit-Format zur Zeitausgabe
+     */
     private static SimpleDateFormat time_formatter = new SimpleDateFormat("HH:mm:ss.SSS");
 
+    /**
+     * gibt an, ob Debug-Ausgaben ausgegeben werden
+     */
     private static boolean printDebug = false;
+
+    /**
+     * gibt an, ob Fehler-Ausgaben ausgegeben werden
+     */
     private static boolean printError = true;
+
+    /**
+     * gibt an, ob Info-Ausgaben ausgegeben werden
+     */
     private static boolean printInfo = true;
+
+    /**
+     * gibt an, ob jeder Zeile die Zeit voran gestellt wird
+     */
     private static boolean addTime = false;
 
+    /**
+     * setzt Fehler-Ausgabe
+     *
+     * @param printDebug true = fehler werden ausgegeben. false = fehler werden nicht ausgegeben
+     */
     public static void setPrintDebug(boolean printDebug) {
         Log.printDebug = printDebug;
     }
 
     public synchronized static void e(String text) {
         if (printError)
-            System.err.print(time() + text);
+            System.err.print(text);
     }
 
     public synchronized static void eLine(String text) {
@@ -81,6 +109,11 @@ public class Log {
         d(String.valueOf(v));
     }
 
+    /**
+     * liefert, falls Zeit-Ausgabe aktiv ist, einen String mit Zeit-infos zurueck
+     *
+     * @return falls Zeit-Ausgabe aktiv ist, String mit Zeit-infos
+     */
     private static String time() {
         if (!addTime)
             return "";

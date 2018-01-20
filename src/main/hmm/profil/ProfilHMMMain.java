@@ -10,9 +10,22 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Ausfuehrbare Klasse, die den Dateipfad der Traings-Sequencen als Parameter (-filetrain <Path>)
+ * sowie der Test-Sequencen als Parameter (-filetest <Path>) uebergeben bekommen muss.
+ * <p>
+ * Erstellt anhand der Trainings-Sequencen ein {@link ProfilHMM}.
+ * Anschliessend wird mittels des Viterbi-Algorithmus fuer jede Test-Sequenz ein Zustands-Pfad ermittelt.
+ *
+ * @author Soeren Metje
+ */
 public class ProfilHMMMain {
 
-
+    /**
+     * ausfuehrbare Methode
+     *
+     * @param args Argumente
+     */
     public static void main(String[] args) {
         // set up Parameter
         ParameterSet parameterSet = new ParameterSet();

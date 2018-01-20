@@ -10,7 +10,7 @@ import java.io.*;
 import java.util.Arrays;
 
 /**
- * Ausfuehrbare Klasse, den Dateipfad als Parameter (-file <Path>) uebergeben bekommen muss.
+ * Ausfuehrbare Klasse, die den Dateipfad als Parameter (-file <Path>) uebergeben bekommen muss.
  * Gibt Daten der Datei aus.
  * <p>
  * Generiert anhand der eingelesenen beobachteten Sequenz einen Zustands-Pfad mittels des Viterbi-Algorithmus in {@link CasinoHMM}

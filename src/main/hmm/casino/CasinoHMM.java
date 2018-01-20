@@ -9,7 +9,8 @@ import main.hmm.HMM;
  * <p>
  * Anhand  https://en.wikipedia.org/wiki/Viterbi_algorithm  implementiert.
  * <p>
- * Enthaelt die Implementation des Viterbi-Algorithmus, der aus einer uebergebenen Sequenz einen Zustands-Pfad generiert. F = Fair, L = Loaded.
+ * Enthaelt die Implementation des Viterbi-Algorithmus.
+ * Dieser generiert aus einer uebergebenen Sequenz einen Zustands-Pfad. F = Fair, L = Loaded.
  *
  * @author Soren Metje
  */
@@ -39,6 +40,7 @@ public class CasinoHMM {
      * Uebergangswahrscheinlichen zwischen den Zustaenden
      */
     private final double[][] TRANSITION_MATRIX = new double[][]{{.95d, .05d}, {.1d, .9d}};
+
     /**
      * Beobachtungswahrscheinlichketen der Ereignisse in den jeweiligen Zustaenden
      */
@@ -57,7 +59,7 @@ public class CasinoHMM {
 
 
     /**
-     * Implementation des Viterbi-Algorithmus für den logarithmischen Raum
+     * Implementation des Viterbi-Algorithmus fuer den logarithmischen Raum
      *
      * @param observations Beobachtungsfolge
      * @return Zustands-Pfad
