@@ -8,7 +8,7 @@ import main.logger.Log;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
 /**
  * Ausfuehrbare Klasse, die den Dateipfad der Traings-Sequencen als Parameter (-filetrain <Path>)
@@ -59,24 +59,53 @@ public class ProfilHMMMain {
 
         Log.iLine();
 
+        // Test-Sequences --------------------------------------------------------
         List<Sequence> sequencesTest = readFile(paramFileTest.getValue());
 
-        for (int i = 0; i < sequencesTest.size(); i++) {
-
-            char[] observ = sequencesTest.get(i).getSequence().toCharArray();
-
-            char[] statePath = null;
-            try {
-                statePath = model.viterbi(observ);
-            } catch (IllegalArgumentException e) {
-                Log.eLine("ERROR: Viterbi ProfilHMM failed! " + e.getMessage());
-                System.exit(1);
-            }
-
-            Log.iLine(String.valueOf(observ));
-            Log.iLine(String.valueOf(statePath));
-            Log.iLine();
+        int sequenceCount = sequencesTest.size();
+        List<ViterbiPath> viterbiPaths = Collections.synchronizedList(new ArrayList<>(sequenceCount));
+        int coreCount = Runtime.getRuntime().availableProcessors();
+        Log.dLine("available Cores = " + coreCount);
+        // Init queues
+        List<Queue<Sequence>> queues = new ArrayList<>(coreCount);
+        for (int i = 0; i < coreCount; i++) {
+            queues.add(new LinkedList<>());
         }
+        // Distribute sequences to queues
+        {
+            int i = 0;
+            for (Sequence sequence : sequencesTest) {
+                queues.get(i % coreCount).add(sequence);
+                i++;
+            }
+        }
+        // Create and Start Threads
+        int threadCount = 0;
+        Queue<Thread> threads = new LinkedList<>();
+        for (Queue<Sequence> queue : queues) {
+            if (!queue.isEmpty()) {
+                Thread thread = new ThreadViterbi(model, queue, viterbiPaths);
+                threads.add(thread);
+                threadCount++;
+                thread.start();
+            }
+        }
+        Log.iLine(threadCount + " Threads created and started running Viterbi-Algo for " + sequenceCount + " Test-Sequences");
+        Log.iLine("Waiting for Output...");
+
+        // Waiting for threads to finish
+        while (!threads.isEmpty()) {
+            Thread thread = threads.poll();
+            try {
+                thread.join();
+                Log.dLine(thread.getName() + " finished");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // TODO implement rRNA detection
+
     }
 
     private static List<Sequence> readFile(String filePath) {

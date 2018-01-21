@@ -431,18 +431,17 @@ public class ProfilHMM {
     /**
      * Implementation des Viterbi-Algorithmus fuer den logarithmischen Raum
      *
-     * @param observations Beobachtungsfolge
+     * @param sequence Beobachtungsfolge
      * @return Zustands-Pfad
      * @throws IllegalArgumentException falls uebergebenes Feld == null
      *                                  oder Beobachtung nicht im Feld gefunden wird
      */
-    public synchronized char[] viterbi(final char[] observations) throws IllegalArgumentException {
-        Log.iLine("Viterbi ProfilHMM -----------------------------");
-
-        if (observations == null)
-            throw new IllegalArgumentException("observations is null");
+    public ViterbiPath viterbi(final Sequence sequence) throws IllegalArgumentException {
+        if (sequence == null)
+            throw new IllegalArgumentException("sequence is null");
 
         // init
+        char[] observations = sequence.getSequence().toCharArray();
         int[] observationIndices = observationsToIndices(observations);
         int length = observationIndices.length + 1;
 
@@ -558,17 +557,17 @@ public class ProfilHMM {
 
         int[] stateIndexPath = new int[length - 1]; // z
         char[] statePath = new char[length - 1]; // x
+        double score = Double.NEGATIVE_INFINITY;
         {
             int i = length - 1, j = lengthModel - 1;
             int zEnd = -1;
             {
-                double probLast = Double.NEGATIVE_INFINITY;
                 for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
                     double prob = viterbiVar[stateIndex][i][j];
-                    if (prob > probLast) {
+                    if (prob > score) {
                         zEnd = stateIndex;
-                        probLast = prob;
+                        score = prob;
                     }
                 }
             }
@@ -607,7 +606,7 @@ public class ProfilHMM {
         }
         Log.dLine('\n');
 
-        return statePath;
+        return new ViterbiPath(sequence, score, statePath);
     }
 
     /**
