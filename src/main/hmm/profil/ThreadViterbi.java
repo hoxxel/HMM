@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Queue;
 
 public class ThreadViterbi extends Thread {
+    private static final Object outputMonitor = new Object();
+
     private final ProfilHMM model;
     private final Queue<Sequence> sequenceQueue;
     private final List<ViterbiPath> finishedPaths;
@@ -25,6 +27,8 @@ public class ThreadViterbi extends Thread {
             Sequence sequence = sequenceQueue.poll();
 
             ViterbiPath viterbiPath = null;
+
+            long millis = System.currentTimeMillis();
             try {
                 viterbiPath = model.viterbi(sequence);
             } catch (IllegalArgumentException e) {
@@ -34,11 +38,15 @@ public class ThreadViterbi extends Thread {
                 Log.eLine("ERROR: Out of Memory " + e.getMessage() + ". Start with more Memory. (Argument -Xmx<Size>)");
                 System.exit(1);
             }
+            millis = (System.currentTimeMillis() - millis); // calc time of viterbi
+            float time = (float) millis / 1000; // in sec
 
-            Log.iLine("Sequece " + sequence.getDescription() + " -----------------------------");
-            Log.iLine(sequence.getSequence());
-            Log.iLine(viterbiPath.toString());
-            Log.iLine();
+            synchronized (outputMonitor) {
+                Log.iLine(String.format("(%.2fsec) %s -----------------------------", time, sequence.getDescription()));
+                Log.iLine(sequence.getNucleotideSequence());
+                Log.iLine(viterbiPath.toString());
+                Log.iLine();
+            }
 
             finishedPaths.add(viterbiPath);
         }

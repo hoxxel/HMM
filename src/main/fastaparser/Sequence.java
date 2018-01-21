@@ -28,19 +28,19 @@ public class Sequence {
     /**
      * Nukleotid-Sequenz, folgende Zeile ohne initiierende Zeichen
      */
-    private final String sequence;
+    private final String nucleotideSequence;
 
     /**
      * Konstruktor
      *
      * @param description Beschreibung
      * @param comments    Kommentar
-     * @param sequence    Nukleotid-Sequenz
+     * @param nucleotideSequence    Nukleotid-Sequenz
      */
-    public Sequence(String description, String comments, String sequence) {
+    public Sequence(String description, String comments, String nucleotideSequence) {
         this.description = description;
         this.comments = comments;
-        this.sequence = sequence;
+        this.nucleotideSequence = nucleotideSequence;
     }
 
     /**
@@ -66,8 +66,8 @@ public class Sequence {
      *
      * @return Nukleotid-Sequence
      */
-    public String getSequence() {
-        return sequence;
+    public String getNucleotideSequence() {
+        return nucleotideSequence;
     }
 
     /**

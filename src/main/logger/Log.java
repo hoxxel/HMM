@@ -43,6 +43,10 @@ public class Log {
         Log.printDebug = printDebug;
     }
 
+    public static boolean isPrintDebug() {
+        return printDebug;
+    }
+
     public synchronized static void e(String text) {
         if (printError)
             System.err.print(text);

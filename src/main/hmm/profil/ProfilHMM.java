@@ -170,9 +170,9 @@ public class ProfilHMM {
             throw new IllegalArgumentException("sequencesTrain is empty");
         }
 
-        int length = sequencesTrain.get(0).getSequence().length();
+        int length = sequencesTrain.get(0).getNucleotideSequence().length();
         for (Sequence s : sequencesTrain) {
-            int sLength = s.getSequence().length();
+            int sLength = s.getNucleotideSequence().length();
             if (sLength != length) {
                 throw new IllegalArgumentException("Sequence '" + s.getDescription()
                         + "' has different lenght (" + sLength + ") then the first Sequence (" + length + ")");
@@ -189,7 +189,7 @@ public class ProfilHMM {
 
         for (Sequence seq : sequencesTrain) {
             for (int i = 0; i < length; i++) {
-                char base = seq.getSequence().charAt(i);
+                char base = seq.getNucleotideSequence().charAt(i);
                 if (base == GAP) {
                     gapCounts[i]++;
                 } else {
@@ -334,7 +334,7 @@ public class ProfilHMM {
         }
         Log.dLine();
         for (Sequence sequence : sequencesTrain) {
-            String sequenceString = sequence.getSequence();
+            String sequenceString = sequence.getNucleotideSequence();
 
             // output sequence
             Log.dLine("\u001B[37m");
@@ -441,7 +441,7 @@ public class ProfilHMM {
             throw new IllegalArgumentException("sequence is null");
 
         // init
-        char[] observations = sequence.getSequence().toCharArray();
+        char[] observations = sequence.getNucleotideSequence().toCharArray();
         int[] observationIndices = observationsToIndices(observations);
         int length = observationIndices.length + 1;
 
@@ -524,32 +524,34 @@ public class ProfilHMM {
             }
         }
 
-        // debug output viterbi 3d-matrix
-        Log.dLine("ViterbiVar: ");
-        // [STATE_COUNT][length][lengthModel]
-        for (int j = 0; j < lengthModel; j++) {
-            for (int k = 0; k < STATES.length; k++) {
-                Log.d("\u001B[37m" + (k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " ") + "\u001B[0m");
-                for (int i = 0; i < length; i++) {
-                    Log.d(String.format("%.5s ", String.format("%f", viterbiVar[k][i][j])));
+        if (Log.isPrintDebug()) {
+            // debug output viterbi 3d-matrix
+            Log.dLine("ViterbiVar: ");
+            // [STATE_COUNT][length][lengthModel]
+            for (int j = 0; j < lengthModel; j++) {
+                for (int k = 0; k < STATES.length; k++) {
+                    Log.d("\u001B[37m" + (k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " ") + "\u001B[0m");
+                    for (int i = 0; i < length; i++) {
+                        Log.d(String.format("%.5s ", String.format("%f", viterbiVar[k][i][j])));
+                    }
+                    Log.dLine();
                 }
                 Log.dLine();
             }
-            Log.dLine();
-        }
 
-        Log.dLine("ViterbiArg: ");
-        // [STATE_COUNT][length][lengthModel]
-        for (int j = 0; j < lengthModel; j++) {
-            for (int k = 0; k < STATES.length; k++) {
-                Log.d("\u001B[37m" + (k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " ") + "\u001B[0m");
-                for (int i = 0; i < length; i++) {
-                    int a = viterbiArg[k][i][j];
-                    Log.d(String.format("%5s ", (a >= 0 ? String.valueOf(STATES[a]) : a)));
+            Log.dLine("ViterbiArg: ");
+            // [STATE_COUNT][length][lengthModel]
+            for (int j = 0; j < lengthModel; j++) {
+                for (int k = 0; k < STATES.length; k++) {
+                    Log.d("\u001B[37m" + (k == 0 ? String.format("j%3d%s ", j, STATES[k]) : "    " + STATES[k] + " ") + "\u001B[0m");
+                    for (int i = 0; i < length; i++) {
+                        int a = viterbiArg[k][i][j];
+                        Log.d(String.format("%5s ", (a >= 0 ? String.valueOf(STATES[a]) : a)));
+                    }
+                    Log.dLine();
                 }
                 Log.dLine();
             }
-            Log.dLine();
         }
 
         // BACKTRACE -------------------------------------------------------------------------------------
@@ -599,12 +601,14 @@ public class ProfilHMM {
             }
         }
 
-        // debug output stateIndicesPath
-        Log.dLine("stateIndicesPath");
-        for (int i = 0; i < stateIndexPath.length; i++) {
-            Log.d(stateIndexPath[i]);
+        if (Log.isPrintDebug()) {
+            // debug output stateIndicesPath
+            Log.dLine("stateIndicesPath");
+            for (int i = 0; i < stateIndexPath.length; i++) {
+                Log.d(stateIndexPath[i]);
+            }
+            Log.dLine('\n');
         }
-        Log.dLine('\n');
 
         return new ViterbiPath(sequence, score, statePath);
     }
@@ -658,8 +662,9 @@ public class ProfilHMM {
      *
      * @param observations Beobachtungs-Folge
      * @return entsprechende Index-Folge
+     * @throws IllegalArgumentException falls Beobachtung nicht im Feld gefunden wird
      */
-    private static int[] observationsToIndices(final char[] observations) {
+    private static int[] observationsToIndices(final char[] observations) throws IllegalArgumentException {
         return HMM.charsToIndices(BASES, observations);
     }
 
@@ -668,8 +673,9 @@ public class ProfilHMM {
      *
      * @param observation Beobachtungs
      * @return entsprechender Index
+     * @throws IllegalArgumentException falls Beobachtung nicht im Feld gefunden wird
      */
-    private static int observationToIndex(final char observation) {
+    private static int observationToIndex(final char observation) throws IllegalArgumentException {
         return HMM.charToIndex(BASES, observation);
     }
 
@@ -678,8 +684,9 @@ public class ProfilHMM {
      *
      * @param state Zustand
      * @return entsprechender Index
+     * @throws IllegalArgumentException falls Beobachtung nicht im Feld gefunden wird
      */
-    private static int stateToIndex(final char state) {
+    private static int stateToIndex(final char state) throws IllegalArgumentException {
         return HMM.charToIndex(STATES, state);
     }
 }
