@@ -4,6 +4,7 @@ import main.fastaparser.Sequence;
 import main.hmm.HMM;
 import main.logger.Log;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -106,7 +107,7 @@ public class ProfilHMM {
     /**
      * true = berechne im logarithmischen Raum. false = normal
      */
-    private static final boolean useLogSpace = false;
+    private static final boolean useLogSpace = true;
 
     /**
      * Beobachtungswahrscheinlichketen der Nukleotide im Match-Zustand an Position im Modell
@@ -303,27 +304,33 @@ public class ProfilHMM {
         }
 
 
-        // debug output Emission-Prob
-        if (Log.isPrintDebug()) {
+        // output Emission-Prob
+        {
             StringBuilder outEimissionProb = new StringBuilder("\n");
             outEimissionProb.append("Emission Prob Match: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")\n");
             for (int i = 0; i < emissionProbMatch[0].length; i++) {
+                outEimissionProb.append(String.format("%c:  ", BASES[i]));
                 for (int j = 0; j < emissionProbMatch.length; j++) {
                     outEimissionProb.append(String.format("%.2f ", emissionProbMatch[j][i]));
                 }
                 outEimissionProb.append('\n');
             }
-
             outEimissionProb.append('\n');
-            outEimissionProb.append("Emission Prob Insert: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")\n");
-            for (int i = 0; i < emissionProbInsert[0].length; i++) {
-                for (int j = 0; j < emissionProbInsert.length; j++) {
-                    outEimissionProb.append(String.format("%.2f ", emissionProbInsert[j][i]));
+            Log.iLine(outEimissionProb.toString());
+
+            if (Log.isPrintDebug()) {
+                outEimissionProb = new StringBuilder("\n");
+                outEimissionProb.append("Emission Prob Insert: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")\n");
+                for (int i = 0; i < emissionProbInsert[0].length; i++) {
+                    outEimissionProb.append(String.format("%c:  ", BASES[i]));
+                    for (int j = 0; j < emissionProbInsert.length; j++) {
+                        outEimissionProb.append(String.format("%.2f ", emissionProbInsert[j][i]));
+                    }
+                    outEimissionProb.append('\n');
                 }
                 outEimissionProb.append('\n');
+                Log.dLine(outEimissionProb.toString());
             }
-            outEimissionProb.append('\n');
-            Log.dLine(outEimissionProb.toString());
         }
 
         // calc Transition Count ----------------------------------------------------------------------
@@ -433,7 +440,7 @@ public class ProfilHMM {
                     outTransProb.append('\n');
                 }
             }
-            Log.iLine(outTransProb.toString());
+            Log.dLine(outTransProb.toString());
         }
     }
 
@@ -566,41 +573,32 @@ public class ProfilHMM {
         }
 
         // BACKTRACE -------------------------------------------------------------------------------------
-        // backtrace init
-
-        int[] stateIndexPath = new int[length - 1]; // z
-        char[] statePath = new char[length - 1]; // x
+        List<Character> listStatePath = new LinkedList<>();
         double score = Double.NEGATIVE_INFINITY;
         {
+            // backtrace init / Find path with max prob
             int i = length - 1, j = lengthModel - 1;
             int stateIndexEnd = -1;
             {
                 for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                    double prob = operation(viterbiVar[stateIndex][i][j], transitionProb[stateIndex][stateToIndex(STATE_MATCH)][j]); // log-space // FIXME
+                    double prob = operation(viterbiVar[stateIndex][i][j], transitionProb[stateIndex][stateToIndex(STATE_MATCH)][j]); // log-space
                     if (prob > score) {
                         stateIndexEnd = stateIndex;
                         score = prob;
                     }
-                    System.out.println(STATES[stateIndex] + " " + prob); // FIXME prob immer 0
                 }
             }
 
-            int cursor = stateIndexPath.length - 1;
-
-            stateIndexPath[cursor] = stateIndexEnd;
-            statePath[cursor] = STATES[stateIndexEnd];
-            cursor--;
-
+            listStatePath.add(STATES[stateIndexEnd]);
 
             // backtrace iterate
             try {
-                while (cursor >= 0) {
+                while (i > 0 && j > 0 && (i != 1 || j != 1)) { // FIXME richtig?
                     int stateIndex = viterbiArg[stateIndexEnd][i][j];
                     char state = STATES[stateIndex];
 
-                    stateIndexPath[cursor] = stateIndex;
-                    statePath[cursor] = state;
+                    listStatePath.add(0, state);
 
                     if (state == STATE_MATCH) {
                         i--;
@@ -610,23 +608,21 @@ public class ProfilHMM {
                     } else if (state == STATE_DELETE) {
                         j--;
                     }
-                    cursor--;
                 }
 
             } catch (ArrayIndexOutOfBoundsException e) {
-                throw new ArrayIndexOutOfBoundsException(e.getMessage() + " cursor=" + cursor + " i=" + i + " j=" + j + " seq=" + sequence.getDescription());
+                throw new ArrayIndexOutOfBoundsException(e.getMessage() + " i=" + i + " j=" + j + " seq=" + sequence.getDescription());
             }
-            System.out.println(i + " " + j); // TODO remove
         }
 
-        if (Log.isPrintDebug()) {
-            // debug output stateIndicesPath
-            StringBuilder outStateIndices = new StringBuilder("stateIndicesPath: \n");
-            for (int i = 0; i < stateIndexPath.length; i++) {
-                outStateIndices.append(stateIndexPath[i]);
+        // copy into char array
+        char[] statePath = new char[listStatePath.size()];
+        {
+            int i = 0;
+            for (Character c : listStatePath) {
+                statePath[i] = c;
+                i++;
             }
-            outStateIndices.append('\n');
-            Log.dLine(outStateIndices.toString());
         }
 
         return new ViterbiPath(sequence, score, statePath);
