@@ -64,7 +64,7 @@ public class ProfilHMMMain {
 
         int sequenceCount = sequencesTest.size();
         List<ViterbiPath> viterbiPaths = Collections.synchronizedList(new ArrayList<>(sequenceCount));
-        int coreCount = Runtime.getRuntime().availableProcessors();
+        int coreCount = Runtime.getRuntime().availableProcessors(); // returns count of logical cores available to JVM
         Log.dLine("available Cores = " + coreCount);
         // Init queues
         List<Queue<Sequence>> queues = new ArrayList<>(coreCount);
@@ -103,6 +103,7 @@ public class ProfilHMMMain {
                 e.printStackTrace();
             }
         }
+
 
         // TODO implement rRNA detection
 

@@ -308,11 +308,10 @@ public class ProfilHMM {
                 }
                 outEimissionProb.append('\n');
             }
-            outEimissionProb.append('\n');
             Log.iLine(outEimissionProb.toString());
 
             if (Log.isPrintDebug()) {
-                outEimissionProb = new StringBuilder("\n");
+                outEimissionProb = new StringBuilder();
                 outEimissionProb.append("Emission Prob Insert: (Pseudo-Count = " + PSEUDO_COUNT_EMISSION + ")\n");
                 for (int i = 0; i < emissionProbInsert[0].length; i++) {
                     outEimissionProb.append(String.format("%c:  ", BASES[i]));
@@ -321,7 +320,6 @@ public class ProfilHMM {
                     }
                     outEimissionProb.append('\n');
                 }
-                outEimissionProb.append('\n');
                 Log.dLine(outEimissionProb.toString());
             }
         }
@@ -339,49 +337,66 @@ public class ProfilHMM {
         }
 
         int[][][] transitionCount = new int[STATES.length][STATES.length][lengthModel];
-        for (Sequence sequence : sequencesTrain) {
-            String sequenceString = sequence.getNucleotideSequence();
-
-            // output sequence
-            Log.dLine("\u001B[37m");
-            Log.d(String.format("%.4s", sequence.getDescription()));
-            for (int i = 0; i < length; i++) {
-                Log.d("  " + sequenceString.charAt(i));
+        {
+            StringBuilder out = null;
+            if (Log.isPrintDebug()) {
+                out = new StringBuilder();
             }
-            Log.dLine("\u001B[0m");
+            for (Sequence sequence : sequencesTrain) {
+                String sequenceString = sequence.getNucleotideSequence();
 
-
-            // get States and Transitions
-            char lastState = STATE_MATCH; // interpreting Start-state as Match-state
-            int insertCount = 0;
-
-            Log.d("    ");
-            for (int i = 0, iModel = 0; i < length + 1; i++) {
-                char state = getState(sequenceString, matchState, i);
-                if (state != STATE_IGNORE) {
-
-                    if (state == STATE_INSERT && lastState == STATE_INSERT) {
-                        insertCount++;
+                // output sequence
+                if (out != null) {
+                    out.append("\n\u001B[37m");
+                    out.append(String.format("%.4s", sequence.getDescription()));
+                    for (int i = 0; i < length; i++) {
+                        out.append("  ").append(sequenceString.charAt(i));
                     }
-                    // no Insert-Insert (interpreting start and End as Match-state)
-                    else {
-                        transitionCount[stateToIndex(lastState)][stateToIndex(state)][iModel]++;
-
-                        if (state != STATE_INSERT) {
-                            if (lastState == STATE_INSERT) { // last Insert-Insert has ended
-                                transitionCount[stateToIndex(STATE_INSERT)][stateToIndex(lastState)][iModel] += insertCount;
-                                insertCount = 0;
-                            }
-                            iModel++;
-                        }
-                    }
-
-
-                    lastState = state;
+                    out.append("\u001B[0m\n");
                 }
-                Log.d("  " + state);
+
+
+                // get States and Transitions
+                char lastState = STATE_MATCH; // interpreting Start-state as Match-state
+                int insertCount = 0;
+
+                if (out != null) {
+                    out.append("    ");
+                }
+                for (int i = 0, iModel = 0; i < length + 1; i++) {
+                    char state = getState(sequenceString, matchState, i);
+                    if (state != STATE_IGNORE) {
+
+                        if (state == STATE_INSERT && lastState == STATE_INSERT) {
+                            insertCount++;
+                        }
+                        // no Insert-Insert (interpreting start and End as Match-state)
+                        else {
+                            transitionCount[stateToIndex(lastState)][stateToIndex(state)][iModel]++;
+
+                            if (state != STATE_INSERT) {
+                                if (lastState == STATE_INSERT) { // last Insert-Insert has ended
+                                    transitionCount[stateToIndex(STATE_INSERT)][stateToIndex(lastState)][iModel] += insertCount;
+                                    insertCount = 0;
+                                }
+                                iModel++;
+                            }
+                        }
+
+
+                        lastState = state;
+                    }
+                    if (out != null) {
+                        out.append("  ").append(state);
+                    }
+                }
+                if (out != null) {
+                    out.append('\n');
+                }
             }
-            Log.dLine();
+            if (out != null) {
+                Log.dLine(out.toString());
+            }
         }
 
 
@@ -420,7 +435,7 @@ public class ProfilHMM {
         }
 
         // output Transition Prob
-        {
+        if (Log.isPrintDebug()) {
             StringBuilder outTransProb = new StringBuilder("\nTransition Prob: (Pseudo-Count = " + PSEUDO_COUNT_TRANSITION + ")\n");
             for (int i = 0; i < transitionProb.length; i++) {
                 double[][] transProbMatrix = transitionProb[i];
