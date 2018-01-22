@@ -91,7 +91,7 @@ public class ProfilHMMMain {
             }
         }
         Log.iLine(threadCount + " Threads created and started running Viterbi-Algo for " + sequenceCount + " Test-Sequences");
-        Log.iLine("Waiting for Output...");
+        Log.iLine("Waiting for async Output...");
 
         // Waiting for threads to finish
         while (!threads.isEmpty()) {

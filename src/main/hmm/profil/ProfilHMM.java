@@ -105,11 +105,6 @@ public class ProfilHMM {
     private static final int STATE_COUNT = STATES.length;
 
     /**
-     * true = berechne im logarithmischen Raum. false = normal
-     */
-    private static final boolean useLogSpace = true;
-
-    /**
      * Beobachtungswahrscheinlichketen der Nukleotide im Match-Zustand an Position im Modell
      */
     private double[][] emissionProbMatch;
@@ -132,7 +127,7 @@ public class ProfilHMM {
 
     /**
      * Konstruktor. Erstellt Modell und fuehrt die Methode buildModel aus.
-     * Anschliessend wird ggf. in logarithmischen Raum konvertiert
+     * Anschliessend wird in logarithmischen Raum konvertiert
      *
      * @param sequencesTrain Trainings-Sequenzen
      * @throws IllegalArgumentException falls in buildModel ein Fehler auftritt
@@ -140,12 +135,10 @@ public class ProfilHMM {
     public ProfilHMM(List<Sequence> sequencesTrain) throws IllegalArgumentException {
 
         buildModel(sequencesTrain);
-        if (useLogSpace) {
-            // convert into logspace (can be done before Viterbi-Algo is running)
-            HMM.convertToLogspace(transitionProb);
-            HMM.convertToLogspace(emissionProbMatch);
-            HMM.convertToLogspace(emissionProbInsert);
-        }
+        // convert into logspace (can be done before Viterbi-Algo is running)
+        HMM.convertToLogspace(transitionProb);
+        HMM.convertToLogspace(emissionProbMatch);
+        HMM.convertToLogspace(emissionProbInsert);
     }
 
     /**
@@ -467,10 +460,10 @@ public class ProfilHMM {
 
         // init
         {
-            double initValue = (useLogSpace ? Double.NEGATIVE_INFINITY : 0d);
+            double initValue = Double.NEGATIVE_INFINITY;
 
             int stateIndex = stateToIndex(STATE_MATCH);
-            viterbiVar[stateIndex][0][0] = (useLogSpace ? 0d : 1d);
+            viterbiVar[stateIndex][0][0] = 0d;
             viterbiArg[stateIndex][0][0] = -1;
             for (int j = 1; j < lengthModel; j++) {
                 viterbiVar[stateIndex][0][j] = initValue;
@@ -520,20 +513,19 @@ public class ProfilHMM {
 
                         for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                            double prob = operation(viterbiVar[stateIndex][iShift][jShift], transitionProb[stateIndex][s][jShift]); // log-space
+                            double prob = viterbiVar[stateIndex][iShift][jShift] + transitionProb[stateIndex][s][jShift]; // log-space
                             if (prob > maxProb) {
                                 maxProb = prob;
                                 maxArg = stateIndex;
                             }
                         }
 
-                        // 0 is neutral element of addition (log-space). 1 is neutral element of mult
-                        double emissionProb = useLogSpace ? 0d : 1d;
+                        double emissionProb = 0d; // 0 is neutral element of addition (log-space)
 
                         if (emissionProbMatrix != null) {
                             emissionProb = emissionProbMatrix[j][observationIndices[i - 1]];
                         }
-                        viterbiVar[s][i][j] = operation(emissionProb, maxProb);
+                        viterbiVar[s][i][j] = emissionProb + maxProb;
                         viterbiArg[s][i][j] = maxArg;
                     }
                 }
@@ -582,7 +574,7 @@ public class ProfilHMM {
             {
                 for (int stateIndex = 0; stateIndex < STATE_COUNT; stateIndex++) {
 
-                    double prob = operation(viterbiVar[stateIndex][i][j], transitionProb[stateIndex][stateToIndex(STATE_MATCH)][j]); // log-space
+                    double prob = viterbiVar[stateIndex][i][j] + transitionProb[stateIndex][stateToIndex(STATE_MATCH)][j]; // log-space
                     if (prob > score) {
                         stateIndexEnd = stateIndex;
                         score = prob;
@@ -626,19 +618,6 @@ public class ProfilHMM {
         }
 
         return new ViterbiPath(sequence, score, statePath);
-    }
-
-    /**
-     * Rechenoperation zur Berechnung der Verbundwahrscheinlichkeiten.
-     * logarithmischer Raum wird verwendet: Addition.
-     * Ansonsten: Multiplikation
-     *
-     * @param a erstes Element
-     * @param b zweites Element
-     * @return Summe oder Produkt
-     */
-    private double operation(double a, double b) {
-        return useLogSpace ? a + b : a * b;
     }
 
     /**
