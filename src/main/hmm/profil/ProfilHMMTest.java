@@ -13,10 +13,14 @@ import java.util.Collection;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 
+/**
+ * Test-Klasse fuer {@link ProfilHMM}.
+ *
+ * @author Soeren Metje
+ */
 @RunWith(Parameterized.class)
 public class ProfilHMMTest {
 
-    // fields used together with @Parameter must be public
     @Parameter(0)
     public String[] seqTrain;
     @Parameter(1)
@@ -24,8 +28,6 @@ public class ProfilHMMTest {
     @Parameter(2)
     public String result;
 
-
-    // creates the test data
     @Parameters
     public static Collection<Object[]> data() {
         Object[][] data = new Object[][]{

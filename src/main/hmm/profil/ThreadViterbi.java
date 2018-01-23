@@ -6,19 +6,52 @@ import main.logger.Log;
 import java.util.List;
 import java.util.Queue;
 
+/**
+ * {@link Thread}, der Sequnzen {@link Sequence} aus uebergebener Schlange abarbeitet.
+ * Dabei wird fuer jede Sequenz anhand des uebergebenen Modells mittels des Viterbi-Algorithmus der maximierende Zustands-Pfad berechnet.
+ * Der Score und der Zustands-Pfad der Sequenz wird dann mittles der Wrapper-Klasse {@link ViterbiPath} zur uebergebenen threadsicheren Liste hinzugefuegt.
+ *
+ * @author Soeren Metje
+ */
 public class ThreadViterbi extends Thread {
+    /**
+     * Monitor, um Ausgabe zu synchronisieren
+     */
     private static final Object outputMonitor = new Object();
 
+    /**
+     * ProfilHMM, welches zur Berechnung verwendet wird
+     */
     private final ProfilHMM model;
+
+    /**
+     * Schlange abzuarbeitender Sequenzen
+     */
     private final Queue<Sequence> sequenceQueue;
+
+    /**
+     * threadsichere Liste zu der Ergebnisse hinzugefuegt werden
+     */
     private final List<ViterbiPath> finishedPaths;
 
-    public ThreadViterbi(ProfilHMM model, Queue<Sequence> sequenceQueue, List<ViterbiPath> addPathsTo) {
+    /**
+     * Konstruktor
+     *
+     * @param model                   zu verwendenes ProfilHMM
+     * @param sequenceQueue           abzuarbeitende Sequenzen
+     * @param threadSaveFinishedPaths threadsichere Liste fuer Ergebnisse
+     */
+    public ThreadViterbi(ProfilHMM model, Queue<Sequence> sequenceQueue, List<ViterbiPath> threadSaveFinishedPaths) {
         this.model = model;
         this.sequenceQueue = sequenceQueue;
-        this.finishedPaths = addPathsTo;
+        this.finishedPaths = threadSaveFinishedPaths;
     }
 
+    /**
+     * Arbeitet Sequnzen {@link Sequence} aus uebergebener Schlange ab.
+     * Dabei wird fuer jede Sequenz anhand des uebergebenen Modells mittels des Viterbi-Algorithmus der maximierende Zustands-Pfad berechnet.
+     * Der Score und der Zustands-Pfad der Sequenz wird dann mittles der Wrapper-Klasse {@link ViterbiPath} zur uebergebenen threadsicheren Liste hinzugefuegt.
+     */
     @Override
     public void run() {
         Log.dLine(getName() + " started");

@@ -3,6 +3,8 @@ package main.hmm;
 /**
  * Beinhaltet Funktionen, die sowohl in {@link main.hmm.casino.CasinoHMM}
  * als auch in {@link main.hmm.profil.ProfilHMM} benoetigt werden
+ *
+ * @author Soeren Metje
  */
 public class HMM {
 

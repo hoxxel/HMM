@@ -2,71 +2,70 @@ package main.hmm.profil;
 
 import main.fastaparser.Sequence;
 
-import java.util.Arrays;
-
-public class ViterbiPath implements Comparable<ViterbiPath> {
+/**
+ * Wrapper fuer Sequenz {@link Sequence}, die zusaetzlich das Ergebnis des Viterbi-Algo aus {@link ProfilHMM} haelt.
+ *
+ * @author Soeren Metje
+ */
+public class ViterbiPath {
+    /**
+     * Sequenz {@link Sequence}
+     */
     private final Sequence sequence;
+    /**
+     * Bewertung
+     */
     private final double score;
+    /**
+     * Zustands-Pfad
+     */
     private final char[] statePath;
 
+    /**
+     * Konstruktor
+     *
+     * @param sequence  Sequenz
+     * @param score     Bewertung
+     * @param statePath Zustands-Pfad
+     */
     public ViterbiPath(Sequence sequence, double score, char[] statePath) {
         this.sequence = sequence;
         this.score = score;
         this.statePath = statePath;
     }
 
+    /**
+     * liefert Sequenz {@link Sequence} zurueck
+     *
+     * @return Sequenz {@link Sequence}
+     */
     public Sequence getSequence() {
         return sequence;
     }
 
+    /**
+     * liefert Bewertung zurueck
+     *
+     * @return Bewertung
+     */
     public double getScore() {
         return score;
     }
 
+    /**
+     * liefert Zustands-Pfad zurueck
+     *
+     * @return Zustands-Pfad
+     */
     public char[] getStatePath() {
         return statePath;
     }
 
     /**
-     * liefert true zurueck falls die Werte des uebergebenen Objekts mit dem aufrufenden identisch sind. Ansonsten false
+     * liefert String mit Infos ueber den Zustands-Pfad zurueck
      *
-     * @param o zu vergleichendes Objekt
-     * @return true zurueck falls die Werte des uebergebenen Objekts mit dem aufrufenden identisch sind. Ansonsten false
+     * @return String mit Infos ueber den Zustands-Pfad
      */
-    @Override
-    public boolean equals(Object o) {
-        if (o.getClass() != this.getClass())
-            return false;
-        ViterbiPath viterbiPath = (ViterbiPath) o;
-        if (viterbiPath.score != this.score || !Arrays.equals(viterbiPath.statePath, this.statePath) || !viterbiPath.sequence.equals(this.sequence))
-            return false;
-        return true;
-    }
-
-    /**
-     * Liefert
-     * 1, falls der score des uebergebenen Objekts größer,
-     * -1, falls der score des uebergebenen Objekts kleiner,
-     * oder 0 zurueck, falls der score des uebergebenen Objekts gleich
-     * dem des aufrufenden Objekts ist.
-     * Wird für die sortierung anhand des scores benoetigt
-     *
-     * @param viterbiPath zu vergleichendes {@link ViterbiPath}-Objekt
-     * @return 1, falls der score des uebergebenen Objekts größer,
-     * -1, falls der score des uebergebenen Objekts kleiner,
-     * oder 0 zurueck, falls der score des uebergebenen Objekts gleich
-     * dem des aufrufenden Objekts ist.
-     */
-    @Override
-    public int compareTo(ViterbiPath viterbiPath) {
-        double c = score - viterbiPath.getScore();
-        if (c > 0)
-            return 1;
-        if (c < 0)
-            return -1;
-        return 0;
-    }
-
     @Override
     public String toString() {
         return String.valueOf(statePath);

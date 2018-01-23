@@ -22,7 +22,8 @@ import java.util.*;
 public class ProfilHMMMain {
 
     /**
-     * ausfuehrbare Methode
+     * ausfuehrbare Methode. Erstellt anhand der Traings-Sequnzen ein {@link ProfilHMM} und
+     * berechnet mittels des Viterbi-Algorithmus den wahrscheinlichsten Zustands-Pfad.
      *
      * @param args Argumente
      */
@@ -119,6 +120,13 @@ public class ProfilHMMMain {
         }
     }
 
+    /**
+     * berechnet den Score-Schwellwert der Sequenzen {@link Sequence} bzw. Zusatnds-Pfade {@link ViterbiPath}, mit dem zwischen rRNA und NonrRNA unterschieden werden soll.
+     * Liefert diesen abschliessend zurueck.
+     *
+     * @param viterbiPaths zu betrachtende Sequenzen {@link Sequence} bzw. Zusatnds-Pfade {@link ViterbiPath}
+     * @return Score-Schwellwert
+     */
     private static double calcThreshold(final List<ViterbiPath> viterbiPaths) { // TODO improve
         int stateCount = 2;
         final ArrayList<List<ViterbiPath>> listrRNA = new ArrayList<>(stateCount);
@@ -139,7 +147,6 @@ public class ProfilHMMMain {
                 listrRNA.get(listIndex).add(path);
             }
         }
-
 
         // calc averages of scores from classified sequences
         double[] avgScore = new double[stateCount];
@@ -163,20 +170,33 @@ public class ProfilHMMMain {
         return threshold;
     }
 
+    /**
+     * Klassifiziert Sequnze {@link Sequence} bzw Zustands-Pfad {@link ViterbiPath} als rRNA oder NonrRNA
+     * anhand uebergebenen Schwellwertes bzgl. durchschnittlichem Score pro Zustand des Pfades.
+     * <p>
+     * Liefert true zurueck, falls rRNA. Ansonsten false.
+     *
+     * @param path                      Sequnze {@link Sequence} bzw Zustands-Pfad {@link ViterbiPath}
+     * @param thresholdAvgScorePerState Schwellwertes bzgl. durchschnittlichem Score pro Zustand
+     * @return true, falls rRNA. Ansonsten false.
+     */
     private static boolean isrRNA(final ViterbiPath path, double thresholdAvgScorePerState) { // TODO improve
         final char[] statePath = path.getStatePath();
         final double score = path.getScore();
 
         double scoreAveragePerState = score / statePath.length;
 
-        System.out.printf("sc=%.2f avg=%.2f%n", score, scoreAveragePerState);
-
         if (scoreAveragePerState >= thresholdAvgScorePerState)
             return false;
-
         return true;
     }
 
+    /**
+     * Liesst Sequenzen aus Datei an uebergebenem Pfad mittels {@link FastaParser} ein und liefert sie zurueck.
+     *
+     * @param filePath Pfad zu Datei
+     * @return Liste mit Sequenzen
+     */
     private static List<Sequence> readFile(final String filePath) {
 
         List<Sequence> ret = null;
@@ -199,25 +219,4 @@ public class ProfilHMMMain {
 
         return ret;
     }
-
-    /**
-     * berechnet den Schwellwert und liefert ihn zuerueck
-     *
-     * @param startcodonScores scores der potentiellen Startcodons
-     * @param amount           anteil der korrekten startkodons die größer als der schwellwert sein sollen
-     * @return schwellwert
-     */
-    /*
-    private static double calculateThreshold(List<ViterbiPath> startcodonScores, float amount) {
-
-        List<ViterbiPath> correct = startcodonScores;
-        {
-            for (int i = 1; i < startcodonScores.size() && (float) countCorrectStartcodon(correct) / splitDataIndex > amount; i++) { // whole data has splitDataIndex correct startcodons
-                correct = startcodonScores.subList(i, startcodonScores.size());
-            }
-        }
-
-        return correct.get(0).getScore();
-    }
-    */
 }

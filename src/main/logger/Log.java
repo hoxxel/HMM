@@ -43,6 +43,11 @@ public class Log {
         Log.printDebug = printDebug;
     }
 
+    /**
+     * liefert true zurueck, falls Fehler-Ausgabe aktiv ist. Ansosten false
+     *
+     * @return true, falls Fehler-Ausgabe aktiv ist. Ansosten false
+     */
     public static boolean isPrintDebug() {
         return printDebug;
     }
