@@ -63,7 +63,6 @@ public class ProfilHMMMain {
         List<Sequence> sequencesTest = readFile(paramFileTest.getValue());
 
         int sequenceCount = sequencesTest.size();
-        List<ViterbiPath> viterbiPaths = Collections.synchronizedList(new ArrayList<>(sequenceCount));
         int coreCount = Runtime.getRuntime().availableProcessors(); // returns count of logical cores available to JVM
         Log.dLine("available Cores = " + coreCount);
         // Init queues
@@ -81,6 +80,7 @@ public class ProfilHMMMain {
         }
         // Create and Start Threads
         int threadCount = 0;
+        List<ViterbiPath> viterbiPaths = Collections.synchronizedList(new ArrayList<>(sequenceCount)); // list to hold results created in Threads
         Queue<Thread> threads = new LinkedList<>();
         for (Queue<Sequence> queue : queues) {
             if (!queue.isEmpty()) {
@@ -103,10 +103,56 @@ public class ProfilHMMMain {
                 e.printStackTrace();
             }
         }
+        // all Threads finished
 
+        double threshold = calcThreshold(viterbiPaths);
+        Log.iLine(String.format("Threshold = %.2f", threshold));
 
-        // TODO implement rRNA detection
+        Log.iLine("Table log Score and rRNA-Decision:");
+        {
+            StringBuilder out = new StringBuilder();
+            for (ViterbiPath path : viterbiPaths) {
+                double score = path.getScore();
+                out.append(String.format("%.3f;%c\n", score, (score >= threshold ? '1' : '0')));
+            }
+            Log.iLine(out.toString());
+        }
+    }
 
+    private static double calcThreshold(final List<ViterbiPath> viterbiPaths) { // TODO increase quality
+        final ArrayList<ViterbiPath> copyViterbiPaths = new ArrayList<>(viterbiPaths.size());
+        copyViterbiPaths.addAll(viterbiPaths); // no side-effect to param
+
+        Collections.sort(copyViterbiPaths); // sort from small to big scores
+
+        {
+            StringBuilder out = new StringBuilder("State-Path sorted from small to big score:\n");
+            for (ViterbiPath path : copyViterbiPaths) {
+                out.append(String.format("%.1f ", path.getScore()));
+            }
+            out.append('\n');
+            Log.iLine(out.toString());
+        }
+
+        double threshold = 0d;
+        // find max diff / highest increase
+        {
+            Iterator<ViterbiPath> iterator = copyViterbiPaths.iterator();
+            double scoreLast = iterator.next().getScore();
+
+            double maxIncr = Double.NEGATIVE_INFINITY;
+            while (iterator.hasNext()) {
+                ViterbiPath path = iterator.next();
+                double score = path.getScore();
+                double incr = score - scoreLast;
+                if (incr > maxIncr) {
+                    threshold = score;
+                    maxIncr = incr;
+                }
+                scoreLast = score;
+            }
+        }
+        return threshold;
     }
 
     private static List<Sequence> readFile(String filePath) {
@@ -131,4 +177,25 @@ public class ProfilHMMMain {
 
         return ret;
     }
+
+    /**
+     * berechnet den Schwellwert und liefert ihn zuerueck
+     *
+     * @param startcodonScores scores der potentiellen Startcodons
+     * @param amount           anteil der korrekten startkodons die größer als der schwellwert sein sollen
+     * @return schwellwert
+     */
+    /*
+    private static double calculateThreshold(List<ViterbiPath> startcodonScores, float amount) {
+
+        List<ViterbiPath> correct = startcodonScores;
+        {
+            for (int i = 1; i < startcodonScores.size() && (float) countCorrectStartcodon(correct) / splitDataIndex > amount; i++) { // whole data has splitDataIndex correct startcodons
+                correct = startcodonScores.subList(i, startcodonScores.size());
+            }
+        }
+
+        return correct.get(0).getScore();
+    }
+    */
 }

@@ -67,6 +67,11 @@ public class Log {
             System.out.println(time() + text);
     }
 
+    public static void iLine(double d) {
+        if (printInfo)
+            System.out.println(time() + String.valueOf(d));
+    }
+
     public synchronized static void i(String text) {
         if (printInfo)
             System.out.print(text);
