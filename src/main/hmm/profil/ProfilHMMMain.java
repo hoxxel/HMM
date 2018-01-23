@@ -119,43 +119,65 @@ public class ProfilHMMMain {
         }
     }
 
-    private static double calcThreshold(final List<ViterbiPath> viterbiPaths) { // TODO increase quality
-        final ArrayList<ViterbiPath> copyViterbiPaths = new ArrayList<>(viterbiPaths.size());
-        copyViterbiPaths.addAll(viterbiPaths); // no side-effect to param
-
-        Collections.sort(copyViterbiPaths); // sort from small to big scores
+    private static double calcThreshold(final List<ViterbiPath> viterbiPaths) { // TODO improve
+        int stateCount = 2;
+        final ArrayList<List<ViterbiPath>> listrRNA = new ArrayList<>(stateCount);
+        listrRNA.add(new LinkedList<>()); // 0 = rRNA
+        listrRNA.add(new LinkedList<>()); // 1 = NonrRNA
 
         {
-            StringBuilder out = new StringBuilder("State-Path sorted from small to big score:\n");
-            for (ViterbiPath path : copyViterbiPaths) {
-                out.append(String.format("%.1f ", path.getScore()));
+            // average score of all statepaths
+            double avgScorePerState = 0d;
+            for (ViterbiPath path : viterbiPaths) {
+                avgScorePerState += path.getScore() / path.getStatePath().length;
             }
-            out.append('\n');
-            Log.iLine(out.toString());
+            avgScorePerState /= viterbiPaths.size();
+
+            // use avarage as threshold and classify the sequences
+            for (ViterbiPath path : viterbiPaths) {
+                int listIndex = isrRNA(path, avgScorePerState) ? 1 : 0;
+                listrRNA.get(listIndex).add(path);
+            }
         }
 
-        double threshold = 0d;
-        // find max diff / highest increase
-        {
-            Iterator<ViterbiPath> iterator = copyViterbiPaths.iterator();
-            double scoreLast = iterator.next().getScore();
 
-            double maxIncr = Double.NEGATIVE_INFINITY;
-            while (iterator.hasNext()) {
-                ViterbiPath path = iterator.next();
-                double score = path.getScore();
-                double incr = score - scoreLast;
-                if (incr > maxIncr) {
-                    threshold = score;
-                    maxIncr = incr;
+        // calc averages of scores from classified sequences
+        double[] avgScore = new double[stateCount];
+        {
+            int i = 0;
+            for (List<ViterbiPath> list : listrRNA) {
+                for (ViterbiPath path : list) {
+                    avgScore[i] += path.getScore();
                 }
-                scoreLast = score;
+                avgScore[i] /= list.size();
+                i++;
             }
         }
+
+        // place threshold in between average-rRNA and average-NonrRNA
+        double threshold = 0;
+        for (double avg : avgScore) {
+            threshold += avg;
+        }
+        threshold /= stateCount;
         return threshold;
     }
 
-    private static List<Sequence> readFile(String filePath) {
+    private static boolean isrRNA(final ViterbiPath path, double thresholdAvgScorePerState) { // TODO improve
+        final char[] statePath = path.getStatePath();
+        final double score = path.getScore();
+
+        double scoreAveragePerState = score / statePath.length;
+
+        System.out.printf("sc=%.2f avg=%.2f%n", score, scoreAveragePerState);
+
+        if (scoreAveragePerState >= thresholdAvgScorePerState)
+            return false;
+
+        return true;
+    }
+
+    private static List<Sequence> readFile(final String filePath) {
 
         List<Sequence> ret = null;
 

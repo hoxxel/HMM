@@ -596,6 +596,7 @@ public class ProfilHMM {
                     }
                 }
             }
+            viterbiVar = null; // no reference left -> allow GC to trash
 
             listStatePath.add(STATES[stateIndexEnd]);
 
