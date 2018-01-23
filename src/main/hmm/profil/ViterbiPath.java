@@ -35,7 +35,7 @@ public class ViterbiPath {
     }
 
     /**
-     * liefert Sequenz {@link Sequence} zurueck
+     * Liefert Sequenz {@link Sequence} zurueck
      *
      * @return Sequenz {@link Sequence}
      */
@@ -44,7 +44,7 @@ public class ViterbiPath {
     }
 
     /**
-     * liefert Bewertung zurueck
+     * Liefert Bewertung zurueck
      *
      * @return Bewertung
      */
@@ -53,7 +53,7 @@ public class ViterbiPath {
     }
 
     /**
-     * liefert Zustands-Pfad zurueck
+     * Liefert Zustands-Pfad zurueck
      *
      * @return Zustands-Pfad
      */
@@ -62,7 +62,7 @@ public class ViterbiPath {
     }
 
     /**
-     * liefert String mit Infos ueber den Zustands-Pfad zurueck
+     * Liefert String mit Infos ueber den Zustands-Pfad zurueck
      *
      * @return String mit Infos ueber den Zustands-Pfad
      */

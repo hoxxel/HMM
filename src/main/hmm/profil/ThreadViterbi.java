@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Queue;
 
 /**
- * {@link Thread}, der Sequnzen {@link Sequence} aus uebergebener Schlange abarbeitet.
+ * Thread {@link Thread}, der Sequnzen {@link Sequence} aus uebergebener Schlange abarbeitet.
  * Dabei wird fuer jede Sequenz anhand des uebergebenen Modells mittels des Viterbi-Algorithmus der maximierende Zustands-Pfad berechnet.
  * Der Score und der Zustands-Pfad der Sequenz wird dann mittles der Wrapper-Klasse {@link ViterbiPath} zur uebergebenen threadsicheren Liste hinzugefuegt.
  *
@@ -30,7 +30,7 @@ public class ThreadViterbi extends Thread {
     private final Queue<Sequence> sequenceQueue;
 
     /**
-     * threadsichere Liste zu der Ergebnisse hinzugefuegt werden
+     * Threadsichere Liste zu der Ergebnisse hinzugefuegt werden
      */
     private final List<ViterbiPath> finishedPaths;
 
@@ -61,7 +61,7 @@ public class ThreadViterbi extends Thread {
 
             ViterbiPath viterbiPath = null;
 
-            long millis = System.currentTimeMillis();
+            long millis = System.currentTimeMillis(); // measure calc time
             try {
                 viterbiPath = model.viterbi(sequence);
             } catch (IllegalArgumentException e) {

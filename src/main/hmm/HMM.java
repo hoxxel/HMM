@@ -9,9 +9,9 @@ package main.hmm;
 public class HMM {
 
     /**
-     * Konvertiert die uebergebene 3-dimensionale Matrix als Nebeneffekt in den logarithmischen Raum
+     * Berechne und speichere den Logarithmus jedes Elements der uebergebenen 3d-Matrix als Nebeneffekt
      *
-     * @param raum Raum
+     * @param raum Matrix
      */
     public static void convertToLogspace(final double[][][] raum) {
         for (double[][] matrix : raum) {
@@ -20,7 +20,7 @@ public class HMM {
     }
 
     /**
-     * Konvertiert die uebergebene Matrix als Nebeneffekt in den logarithmischen Raum
+     * Berechne und speichere den Logarithmus jedes Elements der uebergebenen Matrix als Nebeneffekt
      *
      * @param matrix Matrix
      */
@@ -31,7 +31,7 @@ public class HMM {
     }
 
     /**
-     * Konvertiert den uebergebenen Vektor als Nebeneffekt in den logarithmischen Raum
+     * Berechne und speichere den Logarithmus jedes Elements des uebergebenen Vektors als Nebeneffekt
      *
      * @param vector Vektor
      */
@@ -42,7 +42,7 @@ public class HMM {
     }
 
     /**
-     * mappt Beaobachtung-Folge auf entsprechende Index-Folge
+     * Mappt Beaobachtung-Folge auf entsprechende Index-Folge
      *
      * @param space        Feld aller Beobachtungen
      * @param observations Beobachtungs-Folge
@@ -60,7 +60,7 @@ public class HMM {
     }
 
     /**
-     * mappt Beaobachtung auf entsprechenden Index
+     * Mappt Beaobachtung auf entsprechenden Index
      *
      * @param space       Feld aller Beobachtungen
      * @param observation Beobachtung

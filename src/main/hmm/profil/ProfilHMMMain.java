@@ -22,7 +22,7 @@ import java.util.*;
 public class ProfilHMMMain {
 
     /**
-     * ausfuehrbare Methode. Erstellt anhand der Traings-Sequnzen ein {@link ProfilHMM} und
+     * Ausfuehrbare Methode. Erstellt anhand der Traings-Sequnzen ein {@link ProfilHMM} und
      * berechnet mittels des Viterbi-Algorithmus den wahrscheinlichsten Zustands-Pfad.
      *
      * @param args Argumente
@@ -121,7 +121,7 @@ public class ProfilHMMMain {
     }
 
     /**
-     * berechnet den Score-Schwellwert der Sequenzen {@link Sequence} bzw. Zusatnds-Pfade {@link ViterbiPath}, mit dem zwischen rRNA und NonrRNA unterschieden werden soll.
+     * Berechnet den Score-Schwellwert der Sequenzen {@link Sequence} bzw. Zusatnds-Pfade {@link ViterbiPath}, mit dem zwischen rRNA und NonrRNA unterschieden werden soll.
      * Liefert diesen abschliessend zurueck.
      *
      * @param viterbiPaths zu betrachtende Sequenzen {@link Sequence} bzw. Zusatnds-Pfade {@link ViterbiPath}

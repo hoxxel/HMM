@@ -22,7 +22,7 @@ import java.util.List;
  * Anhand verschiedener Quellen implementiert.
  * <p>
  * Enthaelt Methode buildModel, die aus uebergebenen Trainings-Sequenzen ein ProfilHMM erstellt.
- * Enthaelt die Implementation des Viterbi-Algorithmus.
+ * Enthaelt die Implementation des Viterbi-Algorithmus fuer logarithmische Werte.
  * Dieser generiert aus einer uebergebenen Sequenz einen Zustands-Pfad. M = Match, D = Delete, I = Insert.
  *
  * @author Soeren Metje
@@ -120,14 +120,14 @@ public class ProfilHMM {
     private double[][][] transitionProb;
 
     /**
-     * Laenge des Modells bzw Anzahl der Match-Zustaende im Modell.
+     * Laenge des Modells bzw. Anzahl der Match-Zustaende im Modell.
      * Der Start-Zustand wird auch als Match-Zustand interpretiert
      */
     private int lengthModel; // interpreting beginning-state als match-state
 
     /**
      * Konstruktor. Erstellt Modell und fuehrt die Methode buildModel aus.
-     * Anschliessend wird in logarithmischen Raum konvertiert
+     * Anschliessend werden die logarithmierten Wahrscheinlichkeiten berechnet.
      *
      * @param sequencesTrain Trainings-Sequenzen
      * @throws IllegalArgumentException falls in buildModel ein Fehler auftritt
@@ -135,7 +135,7 @@ public class ProfilHMM {
     public ProfilHMM(List<Sequence> sequencesTrain) throws IllegalArgumentException {
 
         buildModel(sequencesTrain);
-        // convert into logspace (can be done before Viterbi-Algo is running)
+        // calc log (can be done before Viterbi-Algo is running)
         HMM.convertToLogspace(transitionProb);
         HMM.convertToLogspace(emissionProbMatch);
         HMM.convertToLogspace(emissionProbInsert);
@@ -453,12 +453,12 @@ public class ProfilHMM {
     }
 
     /**
-     * Implementation des Viterbi-Algorithmus fuer den logarithmischen Raum
+     * Implementation des Viterbi-Algorithmus fuer bereits logarithmierte Werte
      *
      * @param sequence Beobachtungsfolge
      * @return Zustands-Pfad
-     * @throws IllegalArgumentException falls uebergebenes Feld == null
-     *                                  oder Beobachtung nicht im Feld gefunden wird
+     * @throws IllegalArgumentException falls uebergebene Sequenz {@link Sequence} == null
+     *                                  oder falls Beobachtung nicht im Feld entsprechenden gefunden wird
      */
     public ViterbiPath viterbi(final Sequence sequence) throws IllegalArgumentException {
         if (sequence == null)
@@ -602,7 +602,7 @@ public class ProfilHMM {
 
             // backtrace iterate
             try {
-                while (i > 0 && j > 0 && (i != 1 || j != 1)) { // FIXME richtig?
+                while (i > 0 && j > 0 && (i != 1 || j != 1)) { // FIXME right?!
                     int stateIndex = viterbiArg[stateIndexEnd][i][j];
                     char state = STATES[stateIndex];
 
@@ -637,7 +637,7 @@ public class ProfilHMM {
     }
 
     /**
-     * gibt den Zustand zurueck, in dem sich das HMM an uebergebenem index in uebergebener Sequenz befindet
+     * Gibt den Zustand zurueck, in dem sich das HMM an uebergebenem index in uebergebener Sequenz befindet
      * oder ein Leerzeichen, falls sich das Modell an der Stelle im Insert-Zustand befindet, aber kein Zeichen in der Sequenz vorhanden ist.
      * Das uebergebene Feld matchState muss auskunft darueber geben, ob sich das Modell an uebergebenem index im Insert- oder Match-Zustand befindet (true falls Match-Zustand).
      *
@@ -668,7 +668,7 @@ public class ProfilHMM {
     }
 
     /**
-     * mappt Beaobachtung-Folge auf entsprechende Index-Folge
+     * Mappt Beaobachtung-Folge auf entsprechende Index-Folge
      *
      * @param observations Beobachtungs-Folge
      * @return entsprechende Index-Folge
@@ -679,7 +679,7 @@ public class ProfilHMM {
     }
 
     /**
-     * mappt Beaobachtung auf entsprechenden Index
+     * Mappt Beaobachtung auf entsprechenden Index
      *
      * @param observation Beobachtungs
      * @return entsprechender Index
@@ -690,7 +690,7 @@ public class ProfilHMM {
     }
 
     /**
-     * mappt Zustand auf entsprechenden Index
+     * Mappt Zustand auf entsprechenden Index
      *
      * @param state Zustand
      * @return entsprechender Index

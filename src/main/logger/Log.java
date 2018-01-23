@@ -10,7 +10,7 @@ import java.text.SimpleDateFormat;
 public class Log {
 
     /**
-     * Zeit-Format zur Zeitausgabe
+     * Zeit-Format zur formatierten Zeitausgabe
      */
     private static SimpleDateFormat time_formatter = new SimpleDateFormat("HH:mm:ss.SSS");
 
@@ -44,7 +44,7 @@ public class Log {
     }
 
     /**
-     * liefert true zurueck, falls Fehler-Ausgabe aktiv ist. Ansosten false
+     * Liefert true zurueck, falls Fehler-Ausgabe aktiv ist. Ansosten false
      *
      * @return true, falls Fehler-Ausgabe aktiv ist. Ansosten false
      */
@@ -124,7 +124,7 @@ public class Log {
     }
 
     /**
-     * liefert, falls Zeit-Ausgabe aktiv ist, einen String mit Zeit-infos zurueck
+     * Liefert, falls Zeit-Ausgabe aktiv ist, einen String mit Zeit-infos zurueck
      *
      * @return falls Zeit-Ausgabe aktiv ist, String mit Zeit-infos
      */
