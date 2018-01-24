@@ -3,7 +3,6 @@ package main.argparser;
 /**
  * Parameter, der den wert true und false annehmen kann.
  *
- *
  * @author Soeren Metje
  */
 public class Flag extends AbstractParameter<Boolean> {

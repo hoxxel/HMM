@@ -3,7 +3,6 @@ package main.argparser;
 /**
  * Parameter, der einen String als Wert besitzt.
  *
- *
  * @author Soeren Metje
  */
 public class Setting extends AbstractParameter<String> {

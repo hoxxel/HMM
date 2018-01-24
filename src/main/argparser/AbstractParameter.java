@@ -3,7 +3,6 @@ package main.argparser;
 /**
  * abstrakte Parametergrundlage
  *
- *
  * @author Soeren Metje
  */
 abstract class AbstractParameter<T> {

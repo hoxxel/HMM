@@ -33,9 +33,9 @@ public class Sequence {
     /**
      * Konstruktor
      *
-     * @param description Beschreibung
-     * @param comments    Kommentar
-     * @param nucleotideSequence    Nukleotid-Sequenz
+     * @param description        Beschreibung
+     * @param comments           Kommentar
+     * @param nucleotideSequence Nukleotid-Sequenz
      */
     public Sequence(String description, String comments, String nucleotideSequence) {
         this.description = description;

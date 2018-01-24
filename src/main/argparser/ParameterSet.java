@@ -6,7 +6,6 @@ import java.util.List;
 /**
  * Set von Parametern
  *
- *
  * @author Soeren Metje
  */
 public class ParameterSet {
