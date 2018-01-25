@@ -76,7 +76,7 @@ public class ProfilHMMMain {
             StringBuilder out = new StringBuilder();
             for (ViterbiPath path : viterbiPaths) {
                 double score = path.getScore();
-                out.append(String.format("%.3f;%c\n", score, (score >= threshold ? '1' : '0')));
+                out.append(String.format("%5s %,.3f;%c\n", path.getSequence().getDescription(), score, (score >= threshold ? '1' : '0')));
             }
             Log.iLine(out.toString());
         }

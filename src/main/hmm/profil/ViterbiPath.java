@@ -68,6 +68,6 @@ public class ViterbiPath {
      */
     @Override
     public String toString() {
-        return String.valueOf(statePath);
+        return "path " + sequence.getDescription();
     }
 }
