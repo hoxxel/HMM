@@ -8,7 +8,9 @@ import main.logger.Log;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Ausfuehrbare Klasse, die den Dateipfad der Traings-Sequencen als Parameter (-filetrain <Path>)
@@ -16,6 +18,7 @@ import java.util.*;
  * <p>
  * Erstellt anhand der Trainings-Sequencen ein {@link ProfilHMM}.
  * Anschliessend wird mittels des Viterbi-Algorithmus fuer jede Test-Sequenz ein Zustands-Pfad ermittelt.
+ * Dabei wird zur Parallelisierung {@link ParallelizationSupporter} verwendet.
  *
  * @author Soeren Metje
  */
@@ -62,50 +65,9 @@ public class ProfilHMMMain {
 
         // Test-Sequences --------------------------------------------------------
         List<Sequence> sequencesTest = readFile(paramFileTest.getValue());
+        List<ViterbiPath> viterbiPaths = ParallelizationSupporter.viterbiParallelized(model, sequencesTest);
 
-        int sequenceCount = sequencesTest.size();
-        int coreCount = Runtime.getRuntime().availableProcessors(); // returns count of logical cores available to JVM
-        Log.dLine("available Cores = " + coreCount);
-        // Init queues
-        List<Queue<Sequence>> queues = new ArrayList<>(coreCount);
-        for (int i = 0; i < coreCount; i++) {
-            queues.add(new LinkedList<>());
-        }
-        // Distribute sequences to queues
-        {
-            int i = 0;
-            for (Sequence sequence : sequencesTest) {
-                queues.get(i % coreCount).add(sequence);
-                i++;
-            }
-        }
-        // Create and Start Threads
-        int threadCount = 0;
-        List<ViterbiPath> viterbiPaths = Collections.synchronizedList(new ArrayList<>(sequenceCount)); // list to hold results created in Threads
-        Queue<Thread> threads = new LinkedList<>();
-        for (Queue<Sequence> queue : queues) {
-            if (!queue.isEmpty()) {
-                Thread thread = new ThreadViterbi(model, queue, viterbiPaths);
-                threads.add(thread);
-                threadCount++;
-                thread.start();
-            }
-        }
-        Log.iLine(threadCount + " Threads created and started running Viterbi-Algo for " + sequenceCount + " Test-Sequences");
-        Log.iLine("Waiting for async Output...");
-
-        // Waiting for threads to finish
-        while (!threads.isEmpty()) {
-            Thread thread = threads.poll();
-            try {
-                thread.join();
-                Log.dLine(thread.getName() + " finished");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        // all Threads finished
-
+        // calc Threshold
         double threshold = calcThreshold(viterbiPaths);
         Log.iLine(String.format("Threshold = %.2f", threshold));
 

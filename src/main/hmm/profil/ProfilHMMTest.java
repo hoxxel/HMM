@@ -21,20 +21,42 @@ import static org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class ProfilHMMTest {
 
+    /**
+     * Trainings-Sequenzen
+     */
     @Parameter(0)
     public String[] seqTrain;
+
+    /**
+     * Test-Sequenzen
+     */
     @Parameter(1)
     public String seqTest;
+
+    /**
+     * Erwarteter Zustandspfad
+     */
     @Parameter(2)
     public String result;
 
+    /**
+     * Liefert List mit Parametern der Testfaelle zurueck
+     *
+     * @return List mit Parametern der Testfaelle
+     */
     @Parameters
     public static Collection<Object[]> data() {
         Object[][] data = new Object[][]{
-                {new String[]{"UACAAUCAAGG", "UA-AAUCAAGG", "U--AAUCAAGG", "U-CAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG"}, "UACAAUCAAGG", "MIIMMMMMMMM"}};
+                {new String[]
+                        {"UACAAUCAAGG", "UA-AAUCAAGG", "U--AAUCAAGG", "U-CAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG"},
+                        "UACAAUCAAGG", "MIIMMMMMMMM"}};
         return Arrays.asList(data);
     }
 
+    /**
+     * Test von {@link ProfilHMM}.
+     * Sowohl die Erstellung des Modells, als auch der Viterbi-Algorithmus
+     */
     @Test
     public void testViterbiOne() {
         ArrayList<Sequence> sequences = new ArrayList<>(seqTrain.length);
