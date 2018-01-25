@@ -35,7 +35,7 @@ public class ParallelizationSupporter {
 
         // Create and Start Threads
         int threadCount = Math.min(coreCount, sequenceQueue.size());
-        Log.iLine("Creating and starting" + threadCount + " Threads running Viterbi-Algo for " + sequenceCount + " Test-Sequences");
+        Log.iLine("Creating and starting " + threadCount + " Threads running Viterbi-Algo for " + sequenceCount + " Test-Sequences");
         Log.iLine("Waiting for async Output...");
         ViterbiPath[] viterbiPaths = new ViterbiPath[sequenceCount];// list to hold results created in Threads
         Queue<Thread> threads = new LinkedList<>();

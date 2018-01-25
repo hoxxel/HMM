@@ -8,9 +8,12 @@ import main.logger.Log;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Ausfuehrbare Klasse, die den Dateipfad der Traings-Sequencen als Parameter (-filetrain <Path>)
@@ -69,14 +72,18 @@ public class ProfilHMMMain {
 
         // calc Threshold
         double threshold = calcThreshold(viterbiPaths);
-        Log.iLine(String.format("Threshold = %.2f", threshold));
+
+        // output Threshold and pathscores with classification
+        DecimalFormat format = new DecimalFormat("#0.000");
+        format.setDecimalFormatSymbols(new DecimalFormatSymbols(Locale.US));
+        Log.iLine(String.format("Threshold = %s", format.format(threshold)));
 
         Log.iLine("Table log Score and rRNA-Decision:");
         {
             StringBuilder out = new StringBuilder();
             for (ViterbiPath path : viterbiPaths) {
                 double score = path.getScore();
-                out.append(String.format("%5s %,.3f;%c\n", path.getSequence().getDescription(), score, (score >= threshold ? '1' : '0')));
+                out.append(String.format("%s;%c\n", format.format(score), (score >= threshold ? '1' : '0')));
             }
             Log.iLine(out.toString());
         }
