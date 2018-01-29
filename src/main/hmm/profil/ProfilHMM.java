@@ -602,7 +602,7 @@ public class ProfilHMM {
 
             // backtrace iterate
             try {
-                while (i > 0 && j > 0 && (i != 1 || j != 1)) { // FIXME right?!
+                while (i >= 0 && j >= 0 && (i > 1 || j > 1)) { // FIXME right?!
                     int stateIndex = viterbiArg[stateIndexEnd][i][j];
                     char state = STATES[stateIndex];
 

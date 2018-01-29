@@ -47,9 +47,8 @@ public class ProfilHMMTest {
     @Parameters
     public static Collection<Object[]> data() {
         Object[][] data = new Object[][]{
-                {new String[]
-                        {"UACAAUCAAGG", "UA-AAUCAAGG", "U--AAUCAAGG", "U-CAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG"},
-                        "UACAAUCAAGG", "MIIMMMMMMMM"}};
+                {new String[]{"UACAAUCAAGG", "UA-AAUCAAGG", "U--AAUCAAGG", "U-CAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG"}, "UACAAUCAAGG", "MIIMMMMMMMM"},
+                {new String[]{"UACAAUCAAGG", "UA-AAUCAAGG", "U--AAUCAAGG", "U-CAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG", "U--AAUCAAGG", "U--AAUCAAGG", "UACAAUCAAGG"}, "", "DDDDDDDDD"}};
         return Arrays.asList(data);
     }
 
