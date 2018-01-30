@@ -130,7 +130,7 @@ public class ProfilHMMMain {
             }
         }
 
-        // place threshold in between average-rRNA and average-NonrRNA
+        // place threshold in center between average-rRNA and average-NonrRNA // FIXME not really center because of log-space
         double threshold = 0;
         for (double avg : avgScore) {
             threshold += avg;
