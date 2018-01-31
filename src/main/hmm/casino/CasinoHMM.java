@@ -12,7 +12,7 @@ import main.hmm.HMM;
  * Enthaelt die Implementation des Viterbi-Algorithmus.
  * Dieser generiert aus einer uebergebenen Sequenz einen Zustands-Pfad. F = Fair, L = Loaded.
  *
- * @author Soren Metje
+ * @author Soeren Metje
  */
 public class CasinoHMM {
 
@@ -51,15 +51,15 @@ public class CasinoHMM {
      * Konvertiert die Matrizen fuer die Uebergangswahrscheinlichen und Beobachtungswahrscheinlichketen in den logarithmischen Raum
      */
     public CasinoHMM() {
-        // convert into logspace (can be done before Viterbi-Algo is running)
-        HMM.convertToLogspace(INIT_PROBABILITIES);
-        HMM.convertToLogspace(TRANSITION_MATRIX);
-        HMM.convertToLogspace(EMISSION_MATRIX);
+        // calc log for each element in all matrices (can be done before Viterbi-Algo is running)
+        HMM.logspace(INIT_PROBABILITIES);
+        HMM.logspace(TRANSITION_MATRIX);
+        HMM.logspace(EMISSION_MATRIX);
     }
 
-
     /**
-     * Implementation des Viterbi-Algorithmus fuer den logarithmischen Raum
+     * Implementation des Viterbi-Algorithmus fuer bereits logarithmierte Werte.
+     * Liefert den wahrscheinlichsten Zustands-Pfad bei uebergebenen Beobachtungen zurueck.
      *
      * @param observations Beobachtungsfolge
      * @return Zustands-Pfad
@@ -70,7 +70,7 @@ public class CasinoHMM {
         if (observations == null)
             throw new IllegalArgumentException("observations is null");
 
-        // init
+        // init fields
         int[] observationIndices = observationsToIndices(observations);
         int length = observationIndices.length;
 

@@ -13,9 +13,9 @@ public class HMM {
      *
      * @param raum Matrix
      */
-    public static void convertToLogspace(final double[][][] raum) {
+    public static void logspace(final double[][][] raum) {
         for (double[][] matrix : raum) {
-            convertToLogspace(matrix);
+            logspace(matrix);
         }
     }
 
@@ -24,9 +24,9 @@ public class HMM {
      *
      * @param matrix Matrix
      */
-    public static void convertToLogspace(final double[][] matrix) {
+    public static void logspace(final double[][] matrix) {
         for (double[] vector : matrix) {
-            convertToLogspace(vector);
+            logspace(vector);
         }
     }
 
@@ -35,7 +35,7 @@ public class HMM {
      *
      * @param vector Vektor
      */
-    public static void convertToLogspace(final double[] vector) {
+    public static void logspace(final double[] vector) {
         for (int j = 0; j < vector.length; j++) {
             vector[j] = Math.log(vector[j]);
         }

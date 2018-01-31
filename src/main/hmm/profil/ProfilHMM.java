@@ -133,12 +133,11 @@ public class ProfilHMM {
      * @throws IllegalArgumentException falls in buildModel ein Fehler auftritt
      */
     public ProfilHMM(List<Sequence> sequencesTrain) throws IllegalArgumentException {
-
         buildModel(sequencesTrain);
-        // calc log (can be done before Viterbi-Algo is running)
-        HMM.convertToLogspace(transitionProb);
-        HMM.convertToLogspace(emissionProbMatch);
-        HMM.convertToLogspace(emissionProbInsert);
+        // calc log for each element in all matrices (can be done before Viterbi-Algo is running)
+        HMM.logspace(transitionProb);
+        HMM.logspace(emissionProbMatch);
+        HMM.logspace(emissionProbInsert);
     }
 
     /**
@@ -152,7 +151,7 @@ public class ProfilHMM {
      *                                  oder Sequenzen unterschiedlich lang
      *                                  oder Beobachtung nicht im Feld gefunden wird
      */
-    private synchronized void buildModel(List<Sequence> sequencesTrain) throws IllegalArgumentException {
+    private void buildModel(List<Sequence> sequencesTrain) throws IllegalArgumentException {
         Log.iLine("Building ProfilHMM -----------------------------");
         // checks
         if (sequencesTrain == null)
@@ -453,7 +452,8 @@ public class ProfilHMM {
     }
 
     /**
-     * Implementation des Viterbi-Algorithmus fuer bereits logarithmierte Werte
+     * Implementation des Viterbi-Algorithmus fuer bereits logarithmierte Werte.
+     * Liefert den wahrscheinlichsten Zustands-Pfad mit score bei uebergebenen Beobachtungen zurueck.
      *
      * @param sequence Beobachtungsfolge
      * @return Zustands-Pfad
@@ -602,7 +602,7 @@ public class ProfilHMM {
 
             // backtrace iterate
             try {
-                while (i >= 0 && j >= 0 && (i > 1 || j > 1)) { // FIXME right?!
+                while (i >= 0 && j >= 0 && (i > 1 || j > 1)) { // FIXME correct?!
                     int stateIndex = viterbiArg[stateIndexEnd][i][j];
                     char state = STATES[stateIndex];
 

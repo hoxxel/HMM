@@ -16,7 +16,7 @@ import java.util.Arrays;
  * Generiert anhand der eingelesenen beobachteten Sequenz einen Zustands-Pfad mittels des Viterbi-Algorithmus in {@link CasinoHMM}
  * und gibt diesen aus. F = Fair, L = Loaded.
  *
- * @author Soren Metje
+ * @author Soeren Metje
  */
 public class CasinoHMMMain {
 
