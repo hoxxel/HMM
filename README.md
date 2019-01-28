@@ -1,5 +1,5 @@
 # Hidden Markov Model
-Modelliert Emissions- und Übergangswahrscheinlichkeiten.
+Modelliert Emissionswahrscheinlichkeiten von Beobachtungen und Übergangswahrscheinlichkeiten zwischen Zuständen.
 
 ## Casino-HMM
 Ein unehrliches Casino spielt mit fairem und gezinkten Würfel. Anhand einer Wurffolge wird berechnet, wann am wahrscheinlichsten mit welchem Würfel gespielt wurde.
