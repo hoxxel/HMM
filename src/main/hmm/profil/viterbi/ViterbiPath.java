@@ -1,9 +1,10 @@
-package main.hmm.profil;
+package main.hmm.profil.viterbi;
 
 import main.fastaparser.Sequence;
+import main.hmm.profil.RNAProfilHMM;
 
 /**
- * Wrapper fuer Sequenz {@link Sequence}, die zusaetzlich das Ergebnis des Viterbi-Algo aus {@link ProfilHMM} haelt.
+ * Wrapper fuer Sequenz {@link Sequence}, die zusaetzlich das Ergebnis des Viterbi-Algo aus {@link RNAProfilHMM} haelt.
  *
  * @author Soeren Metje
  */

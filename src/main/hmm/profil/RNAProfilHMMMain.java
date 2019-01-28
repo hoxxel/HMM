@@ -4,6 +4,8 @@ import main.argparser.*;
 import main.fastaparser.FastaParser;
 import main.fastaparser.FastaParserException;
 import main.fastaparser.Sequence;
+import main.hmm.profil.viterbi.ViterbiPath;
+import main.hmm.profil.viterbi.parallel.ParallelizationSupporter;
 import main.logger.Log;
 
 import java.io.FileNotFoundException;
@@ -19,16 +21,16 @@ import java.util.Locale;
  * Ausfuehrbare Klasse, die den Dateipfad der Traings-Sequencen als Parameter (-filetrain <Path>)
  * sowie der Test-Sequencen als Parameter (-filetest <Path>) uebergeben bekommen muss.
  * <p>
- * Erstellt anhand der Trainings-Sequencen ein {@link ProfilHMM}.
+ * Erstellt anhand der Trainings-Sequencen ein {@link RNAProfilHMM}.
  * Anschliessend wird mittels des Viterbi-Algorithmus fuer jede Test-Sequenz ein Zustands-Pfad ermittelt.
  * Dabei wird zur Parallelisierung {@link ParallelizationSupporter} verwendet.
  *
  * @author Soeren Metje
  */
-public class ProfilHMMMain {
+public class RNAProfilHMMMain {
 
     /**
-     * Ausfuehrbare Methode. Erstellt anhand der Traings-Sequnzen ein {@link ProfilHMM} und
+     * Ausfuehrbare Methode. Erstellt anhand der Traings-Sequnzen ein {@link RNAProfilHMM} und
      * berechnet mittels des Viterbi-Algorithmus den wahrscheinlichsten Zustands-Pfad.
      *
      * @param args Argumente
@@ -56,9 +58,9 @@ public class ProfilHMMMain {
 
         List<Sequence> sequencesTrain = readFile(paramFileTrain.getValue());
 
-        ProfilHMM model = null;
+        RNAProfilHMM model = null;
         try {
-            model = new ProfilHMM(sequencesTrain);
+            model = new RNAProfilHMM(sequencesTrain);
         } catch (IllegalArgumentException e) {
             Log.eLine("ERROR: Building ProfilHMM failed! " + e.getMessage());
             System.exit(1);

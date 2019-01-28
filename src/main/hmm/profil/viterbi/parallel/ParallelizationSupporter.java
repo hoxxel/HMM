@@ -1,6 +1,9 @@
-package main.hmm.profil;
+package main.hmm.profil.viterbi.parallel;
 
 import main.fastaparser.Sequence;
+import main.hmm.profil.ProfilHMM;
+import main.hmm.profil.RNAProfilHMM;
+import main.hmm.profil.viterbi.ViterbiPath;
 import main.logger.Log;
 
 import java.util.Arrays;
@@ -22,7 +25,7 @@ public class ParallelizationSupporter {
      * Die Threads berechnen anhand des uebergebenen Models fuer jede Sequenz den Zustands-Pfad.
      * Abschlissend wird auf die Threads gewartet und eine Liste mit den Zustands-Pfaden {@link ViterbiPath} zurueck geliefert.
      *
-     * @param model     {@link ProfilHMM} Modell
+     * @param model     {@link RNAProfilHMM} Modell
      * @param sequences {@link Sequence} Sequenz
      * @return Liste mit den Zustands-Pfaden {@link ViterbiPath}
      */

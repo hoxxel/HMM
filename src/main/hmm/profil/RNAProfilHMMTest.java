@@ -1,6 +1,8 @@
 package main.hmm.profil;
 
 import main.fastaparser.Sequence;
+import main.hmm.profil.viterbi.Viterbi;
+import main.hmm.profil.viterbi.ViterbiPath;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,12 +16,12 @@ import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 
 /**
- * Test-Klasse fuer {@link ProfilHMM}.
+ * Test-Klasse fuer {@link RNAProfilHMM}.
  *
  * @author Soeren Metje
  */
 @RunWith(Parameterized.class)
-public class ProfilHMMTest {
+public class RNAProfilHMMTest {
 
     /**
      * Trainings-Sequenzen
@@ -53,7 +55,7 @@ public class ProfilHMMTest {
     }
 
     /**
-     * Test von {@link ProfilHMM}.
+     * Test von {@link RNAProfilHMM}.
      * Sowohl die Erstellung des Modells, als auch der Viterbi-Algorithmus
      */
     @Test
@@ -62,9 +64,9 @@ public class ProfilHMMTest {
         for (int i = 0; i < seqTrain.length; i++) {
             sequences.add(new Sequence(String.valueOf(i), null, seqTrain[i]));
         }
-        ProfilHMM model = new ProfilHMM(sequences);
+        ProfilHMM model = new RNAProfilHMM(sequences);
 
-        ViterbiPath path = model.viterbi(new Sequence("test", null, seqTest));
+        ViterbiPath path = Viterbi.viterbi(model, new Sequence("test", null, seqTest));
         String stringPath = String.valueOf(path.getStatePath());
         Assert.assertEquals(result, stringPath);
     }

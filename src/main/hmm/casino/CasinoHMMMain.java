@@ -10,11 +10,20 @@ import java.io.*;
 import java.util.Arrays;
 
 /**
+ * <p>
  * Ausfuehrbare Klasse, die den Dateipfad als Parameter (-file <Path>) uebergeben bekommen muss.
  * Gibt Daten der Datei aus.
+ * </p>
  * <p>
  * Generiert anhand der eingelesenen beobachteten Sequenz einen Zustands-Pfad mittels des Viterbi-Algorithmus in {@link CasinoHMM}
  * und gibt diesen aus. F = Fair, L = Loaded.
+ * </p>
+ *
+ * <p>
+ * Aufgabe: Implementieren Sie den Viterbi-Algorithmus fuer das HMM zu dem Beispiel des
+ * unehrlichen Casinos, wie in der Vorlesung vorgestellt (siehe auch im Buch von
+ * Durbin et al. "Biological sequence analysis" Seite 54-57).
+ * </p>
  *
  * @author Soeren Metje
  */

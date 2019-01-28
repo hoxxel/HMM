@@ -1,6 +1,9 @@
-package main.hmm.profil;
+package main.hmm.profil.viterbi.parallel;
 
 import main.fastaparser.Sequence;
+import main.hmm.profil.ProfilHMM;
+import main.hmm.profil.viterbi.Viterbi;
+import main.hmm.profil.viterbi.ViterbiPath;
 import main.logger.Log;
 
 import java.util.Queue;
@@ -13,7 +16,7 @@ import java.util.Queue;
  *
  * @author Soeren Metje
  */
-public class ThreadViterbi extends Thread {
+class ThreadViterbi extends Thread {
     /**
      * Monitor, um Ausgabe zu synchronisieren
      */
@@ -25,7 +28,7 @@ public class ThreadViterbi extends Thread {
     private static final Object indexPollMonitor = new Object();
 
     /**
-     * ProfilHMM, welches zur Berechnung verwendet wird
+     * RNAProfilHMM, welches zur Berechnung verwendet wird
      */
     private final ProfilHMM model;
 
@@ -47,7 +50,7 @@ public class ThreadViterbi extends Thread {
     /**
      * Konstruktor
      *
-     * @param model         zu verwendenes ProfilHMM
+     * @param model         zu verwendenes RNAProfilHMM
      * @param sequenceQueue abzuarbeitende Sequenzen
      * @param finishedPaths threadsichere Liste fuer Ergebnisse
      */
@@ -85,9 +88,9 @@ public class ThreadViterbi extends Thread {
 
                 long millis = System.currentTimeMillis(); // measure calc time
                 try {
-                    viterbiPath = model.viterbi(sequence);
+                    viterbiPath = Viterbi.viterbi(model, sequence);
                 } catch (IllegalArgumentException e) {
-                    Log.eLine("ERROR: Viterbi ProfilHMM failed! " + e.getMessage());
+                    Log.eLine("ERROR: Viterbi RNAProfilHMM failed! " + e.getMessage());
                     System.exit(1);
                 } catch (OutOfMemoryError e) {
                     Log.eLine("ERROR: Out of Memory " + e.getMessage() + ". Start with more Memory. (Argument -Xmx<Size>)");

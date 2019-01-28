@@ -1,21 +1,23 @@
 package main.hmm;
 
+import main.hmm.profil.RNAProfilHMM;
+
 /**
  * Beinhaltet Funktionen, die sowohl in {@link main.hmm.casino.CasinoHMM}
- * als auch in {@link main.hmm.profil.ProfilHMM} benoetigt werden
+ * als auch in {@link RNAProfilHMM} benoetigt werden
  *
  * @author Soeren Metje
  */
-public class HMM {
+public class HMMFunc {
 
     /**
      * Berechne und speichere den Logarithmus jedes Elements der uebergebenen 3d-Matrix als Nebeneffekt
      *
-     * @param raum Matrix
+     * @param matrix Matrix
      */
-    public static void logspace(final double[][][] raum) {
-        for (double[][] matrix : raum) {
-            logspace(matrix);
+    public static void logspace(final double[][][] matrix) {
+        for (double[][] matrixTwo : matrix) {
+            logspace(matrixTwo);
         }
     }
 
